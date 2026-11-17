@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doodle Poker — Privacy policy</title>
+<meta name="description" content="Doodle Poker — an app for recording your No Limit Hold’em poker hands and sessions.">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --sky: #cfe8ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 680px; margin: 32px auto; padding: 28px 24px 32px; background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; }
+  @media (max-width: 720px) { main { margin: 16px; } }
+  h1, h2, .brand { font-family: "Permanent Marker", cursive; font-weight: 400; }
+  h1 { font-size: 2.4rem; margin: 0.2em 0 0.1em; text-align: center; }
+  h2 { color: var(--teal); font-size: 1.35rem; margin: 1.6em 0 0.3em; }
+  .tag { text-align: center; color: var(--teal); font-family: "Permanent Marker", cursive; font-size: 1.2rem; margin: 0 0 1em; }
+  .mark { display: flex; justify-content: center; }
+  svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  nav { display: flex; gap: 18px; justify-content: center; margin: 0 0 18px; font-weight: 700; }
+  nav a, a { color: var(--teal); }
+  nav a[aria-current] { color: var(--ink); text-decoration: none; }
+  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 14px; background: var(--teal); color: #fff; text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
+  .center { text-align: center; }
+  ul { padding-left: 1.2em; }
+  footer { margin-top: 2em; font-size: 0.85rem; opacity: 0.7; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+<div class="mark"><svg width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg></div>
+<h1>Privacy policy</h1>
+<nav><a href="./">Home</a><a href="privacy.html" aria-current="page">Privacy</a><a href="support.html">Support</a></nav>
+<p><em>Last updated: 23 October 2026</em></p>
+<p>This policy is for the <strong>Doodle Poker</strong> app for Android and iOS, made by an independent developer (“I”, “me”).</p>
+<h2>The short version</h2>
+<p>Doodle Poker doesn’t collect, store or share any personal information. There are no ads, no analytics, no accounts and no tracking. Nothing you record is sent anywhere — unless you choose to use the optional AI review (see below), or share something yourself.</p>
+<h2>What the app keeps — on your device only</h2>
+<ul>
+  <li>the poker hands and sessions you record;</li>
+  <li>your settings (such as blinds, currency, sound and vibration).</li>
+</ul>
+<p>None of this is sent to me or to anyone else. It stays on your device until you uninstall the app or clear its data.</p>
+<h2>Optional: Claude review</h2>
+<p>The app can ask Claude (made by Anthropic) to look over a hand. This is off until you paste in <strong>your own</strong> Claude API key in Settings. Only when you press “Ask Claude API” on a hand (live, or as a batch, which Anthropic does in its own time and the app collects later), that hand is sent to Anthropic, using your key: its players (with the tags and notes you wrote about them), the actions, the cards that are known, the result and your notes. I never receive it. The key is kept in your device’s secure store, is left out of backups, and is sent only to Anthropic. What Anthropic does with the data is covered by <a href="https://www.anthropic.com/legal/privacy">Anthropic’s privacy policy</a>. The answer is kept on the hand, on your device. A batch that is still waiting for its answer is kept on the hand too (its number, so the app can ask Anthropic for it), and is in your backups; the key never is.</p>
+<p>You can also use any AI app without a key: the app copies the same text to your clipboard, and you paste it into the AI app of your choice. It leaves Doodle Poker only when you copy it or use the share button (which hands it to the app you pick), and what that app does with it is covered by that app’s own privacy policy. The answer you paste back is kept on the hand, on your device.</p>
+<h2>Backups and sharing</h2>
+<p>Backups, exports and “share as text” are made only when you ask. They are files or text handed to your device’s share sheet, and where they go is up to you. The app never sends them anywhere itself.</p>
+<h2>Permissions</h2>
+<p>The app uses the vibration (which you can turn off in Settings) and, if you turn them on, notifications that the device itself shows as break reminders (no server is involved). It doesn’t use your location, contacts, camera, microphone, photos or files.</p>
+<h2>The app stores</h2>
+<p>When you download the app from Google Play or the App Store, Google or Apple may collect information under their own privacy policies. I don’t receive any personal information from them.</p>
+<h2>Changes</h2>
+<p>If the app ever changes in a way that affects your privacy (for example, if a new feature sends data to a service), this policy will be updated first, and the date above changed.</p>
+<h2>Contact</h2>
+<p>Questions about privacy? Email <a href="mailto:mkajspam@gmail.com">mkajspam@gmail.com</a>.</p>
+<footer>Doodle Poker · <a href="./">Home</a> · <a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></footer>
+</main>
+</body>
+</html>

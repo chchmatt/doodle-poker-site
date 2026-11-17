@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Open in Doodle Poker</title>
+<style>body{font-family:system-ui,sans-serif;background:#fffaf0;color:#2d2a3e;text-align:center;padding:3em 1em}h1{font-size:1.4rem}</style></head>
+<body><h1>Opening Doodle Poker…</h1>
+<p>If the app does not open, Doodle Poker needs to be installed on this phone.</p>
+<script>
+  var id = new URLSearchParams(location.search).get('s');
+  if (id && /^[A-Za-z0-9._-]+$/.test(id)) location.replace('doodlepoker://sessions/' + id);
+</script></body></html>
