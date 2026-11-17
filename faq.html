@@ -90,8 +90,7 @@
   .person .spinner { width: 22%; left: 56.9%; top: 64.35%; height: auto; aspect-ratio: 1; animation: whirl 8s linear var(--cd) infinite; }
   @keyframes whirl { 0% { transform: rotate(0); animation-timing-function: cubic-bezier(.12, .7, .25, 1); } 32%, 100% { transform: rotate(1260deg); } }
   .person .smoke { position: absolute; width: 0; height: 280%; pointer-events: none; }
-  .person .puff { position: absolute; left: 0; bottom: 0; width: 7cqw; height: 7cqw; border-radius: 50%; background: rgba(95, 99, 116, .55); filter: blur(1.2px); opacity: 0; animation: rise 7.5s linear var(--pd) infinite; }
-  @keyframes rise { 0% { bottom: 0; opacity: 0; transform: translateX(-50%) scale(.5); } 8% { opacity: .55; } 60% { opacity: .3; } 100% { bottom: 100%; opacity: 0; transform: translateX(calc(-50% + var(--px))) scale(4.5); } }
+  .person .smoke svg { position: absolute; left: -20cqw; bottom: 0; width: 40cqw; height: 100%; overflow: visible; }
   @keyframes sway { from { transform: translate(-1.2%, -0.6%) rotate(-0.9deg); } to { transform: translate(1.2%, 0.6%) rotate(0.9deg); } }
   @keyframes blink { 0%, 19%, 22%, 61%, 64%, 100% { opacity: 0; } 20.5%, 62.5% { opacity: 1; } }
   @keyframes sip {
