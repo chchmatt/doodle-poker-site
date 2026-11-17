@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /open/
+
+Sitemap: https://doodlepoker.com/sitemap.xml

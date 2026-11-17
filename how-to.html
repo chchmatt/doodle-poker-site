@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to — Doodle Poker</title>
+<meta name="description" content="Short guides: record a hand, track a session, add a person, and back up and restore your Doodle Poker data.">
+<link rel="icon" href="favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doodle Poker">
+<meta property="og:title" content="How to — Doodle Poker">
+<meta property="og:description" content="Short guides: record a hand, track a session, add a person, and back up and restore your Doodle Poker data.">
+<meta property="og:url" content="https://doodlepoker.com/how-to.html">
+<meta property="og:image" content="https://doodlepoker.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Doodle Poker: every hand tells a story">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to — Doodle Poker">
+<meta name="twitter:description" content="Short guides: record a hand, track a session, add a person, and back up and restore your Doodle Poker data.">
+<meta name="twitter:image" content="https://doodlepoker.com/img/og.png">
+<link rel="canonical" href="https://doodlepoker.com/how-to.html">
+<style>
+  @font-face { font-family: "Permanent Marker"; src: url("fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Saira Stencil One"; src: url("fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --teal-dark: #0f7a6d; --orange: #ff5a36; --sky: #cfe8ff; --dusk: #574a69; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  img { max-width: 100%; height: auto; display: block; }
+  svg.mark-svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--paper); padding: 8px 12px; z-index: 5; }
+  .skip:focus { left: 8px; top: 8px; }
+  header.top { max-width: 960px; margin: 0 auto; padding: 18px 16px 0; text-align: center; }
+  header.top a.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.5rem; }
+  header.top .mark-svg { width: 40px; height: 40px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; margin: 10px 0 0; font-weight: 700; font-size: 0.98rem; }
+  nav a { color: var(--ink); text-decoration: none; padding: 4px 2px; border-bottom: 3px solid transparent; }
+  nav a:hover { border-bottom-color: var(--teal); }
+  nav a[aria-current] { border-bottom-color: var(--orange); }
+  main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
+  .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
+  .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
+  @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
+  h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
+  h1 { font-size: 2.3rem; line-height: 1.15; margin: 0.1em 0 0.3em; }
+  h2 { color: var(--teal-dark); font-size: 1.55rem; line-height: 1.2; margin: 1.3em 0 0.3em; }
+  h3 { font-size: 1.2rem; margin: 1.2em 0 0.2em; }
+  .card > h2:first-child, .card > h1:first-child { margin-top: 0; }
+  p { margin: 0.6em 0; }
+  a { color: var(--teal-dark); }
+  a:hover { color: var(--orange); }
+  :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+  ul, ol { padding-left: 1.3em; margin: 0.6em 0; }
+  li { margin: 0.3em 0; }
+  .tag { color: var(--teal-dark); font-family: "Permanent Marker", cursive; font-size: 1.3rem; margin: 0 0 0.6em; }
+  .hero { text-align: center; }
+  .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
+  .hero h1 { font-size: 2.8rem; }
+  .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
+  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
+  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 14px; background: var(--teal); color: #fff; text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
+  .button.alt { background: #fff; color: var(--ink); }
+  .button:hover { color: #fff; background: var(--teal-dark); }
+  .button.alt:hover { color: var(--ink); background: var(--sky); }
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
+  @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  .pic img, .shot { border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); width: 100%; }
+  .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
+  .pic { margin: 0; }
+  .shot { aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
+  .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
+  .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
+  .mini { border: 3px solid var(--ink); border-radius: 14px; padding: 14px 16px; background: #fff; }
+  .mini h3 { margin-top: 0; color: var(--teal-dark); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
+  .toc a { font-weight: 700; }
+  .steps { list-style: none; counter-reset: s; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; background: var(--teal); color: #fff; font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
+  .note { border-left: 6px solid var(--orange); padding: 2px 0 2px 14px; margin: 1em 0; }
+  details { border: 3px solid var(--ink); border-radius: 14px; background: #fff; margin: 12px 0; }
+  summary { cursor: pointer; padding: 12px 16px; font-family: "Permanent Marker", cursive; font-size: 1.15rem; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
+  details[open] summary::before { content: "–"; }
+  details > div { padding: 0 16px 12px; }
+  .release { border-top: 3px dashed var(--ink); padding-top: 14px; margin-top: 20px; }
+  .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
+  footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
+  footer nav { font-size: 0.9rem; }
+  footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: #fff; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--ink); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+<header class="top">
+  <a class="brand" href="./"><svg class="mark-svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg><span>Doodle Poker</span></a>
+  <nav aria-label="Pages"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html" aria-current="page">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+</header>
+<main id="main">
+<section class="card narrow">
+  <h1>How to…</h1>
+  <p>Four short guides for the jobs you will do most. The names of buttons are written as they appear in the app.</p>
+  <ul class="toc"><li><a href="#record-a-hand">Record a hand</a></li><li><a href="#track-a-session">Track a session</a></li><li><a href="#add-a-person">Add a person</a></li><li><a href="#back-up-and-restore">Back up and restore</a></li></ul>
+</section>
+<section class="card narrow tilt-l" id="record-a-hand">
+  <h2>Record a hand</h2>
+  <p>Do it as it happens, or afterwards. A hand saves itself as you go, so you can leave and come back.</p>
+  <ol class="steps"><li>On Home, tap <strong>HANDS</strong>, then <strong>Record a hand</strong>. (In a session, use the buttons on the session page.)</li><li>Set the number of players and tap your own seat on the table.</li><li>Tap a seat, then the pad, to add each action: fold, check, call, bet, raise or all in. Deal the cards as they come.</li><li>Made a slip? <strong>Back one step</strong> takes back the last action.</li><li>When the hand is over, the app works out the pot, the side pots and the winners.</li><li>Use the tabs on the hand (Hand, Actions, Notes and AI) to add notes and tags. Tap <strong>Share this hand</strong> to send it as text or a picture.</li></ol>
+  <div class="note"><p><strong>In a hurry?</strong> Tap <strong>QUICK HAND</strong> on Home and type the hand in your own shorthand. Typing and saving work with no signal. You can keep it as a note, or (with your own Claude key) have the app build the hand from your words.</p></div>
+</section>
+<section class="card narrow tilt-r" id="track-a-session">
+  <h2>Track a session</h2>
+  <p>From sitting down to cashing out.</p>
+  <ol class="steps"><li>On Home, tap <strong>SESSIONS</strong>, then the plus button.</li><li>Choose a place (you must pick one), the game, the currency and your buy-in. Check the start time.</li><li>Tap <strong>Start now</strong>. Home now shows PLAYING and a stopwatch. If you are waiting for a seat, tap <strong>Waiting for a seat</strong> instead, and start the session when you sit down.</li><li>Use the quick money button at the bottom left of Home to <strong>Top up</strong>, <strong>Set stack</strong>, take <strong>Chips off</strong> or <strong>Cash out</strong>, and to go on a break.</li><li>When you are done, cash out and end the session. You can rate it, tag it and add notes.</li></ol>
+  <div class="note"><p><strong>Planning ahead?</strong> Set the start time in the future and save it as a planned session. You can add it to your phone’s calendar, and Home shows it as your next session.</p></div>
+</section>
+<section class="card narrow tilt-l" id="add-a-person">
+  <h2>Add a person</h2>
+  <p>Only a name is needed. Add the rest when you have it.</p>
+  <ol class="steps"><li>On Home, tap <strong>PEOPLE</strong>, then the plus button.</li><li>Type a name. If you do not know it, switch on <strong>Random person</strong>.</li><li>Pick a type if you like, such as TAG, nit or fish.</li><li>Give them a face: build one from parts, or describe them in words.</li><li>Add notes and a rating, then tap <strong>Add this person</strong>.</li></ol>
+  <div class="note"><p><strong>From a hand:</strong> the player boxes in a hand have <strong>Save to my people</strong>, so you can add someone without leaving the hand.</p></div>
+</section>
+<section class="card narrow tilt-r" id="back-up-and-restore">
+  <h2>Back up and restore</h2>
+  <p>Everything lives on your phone, so a backup file is your safety net. Make one now and then, and keep it somewhere other than the phone.</p>
+  <ol class="steps"><li>On Home, tap the gear for Settings, then <strong>Backup and restore</strong>.</li><li>Choose what to include. Everything is ticked except your Claude key.</li><li>Tap <strong>Backup</strong>. Your phone’s share sheet opens: save the file to Drive, email it to yourself, or send it to your computer. It is named <code>backup-</code> and the date, ending <code>.doodle-poker</code>.</li><li><strong>To restore</strong> (on this phone or a new one): install Doodle Poker, open <strong>Backup and restore</strong> and tap <strong>Restore from a file</strong>, then pick your file. (On a phone with the app installed, opening the file from Drive or email does the same.)</li><li>The app shows what is in the file next to what is on the phone. Choose <strong>Add what is missing</strong> to keep everything already there, or <strong>Replace</strong> to make the ticked parts match the file.</li></ol>
+  <div class="note"><p><strong>Your Claude key</strong> is left out of a backup unless you switch on “Include my Claude key”. The app reminds you to back up after 14 days by default; you can change that in Settings.</p></div>
+</section>
+</main>
+<footer>
+  <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+  <p>Doodle Poker · coming soon · <a href="mailto:mkajspam@gmail.com">mkajspam@gmail.com</a></p>
+</footer>
+</body>
+</html>

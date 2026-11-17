@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features — Doodle Poker</title>
+<meta name="description" content="Everything Doodle Poker does: record hands, track sessions, keep notes on people, a Doodle Book, study tools, money and stats, and your own backup.">
+<link rel="icon" href="favicon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doodle Poker">
+<meta property="og:title" content="Features — Doodle Poker">
+<meta property="og:description" content="Everything Doodle Poker does: record hands, track sessions, keep notes on people, a Doodle Book, study tools, money and stats, and your own backup.">
+<meta property="og:url" content="https://doodlepoker.com/features.html">
+<meta property="og:image" content="https://doodlepoker.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Doodle Poker: every hand tells a story">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Features — Doodle Poker">
+<meta name="twitter:description" content="Everything Doodle Poker does: record hands, track sessions, keep notes on people, a Doodle Book, study tools, money and stats, and your own backup.">
+<meta name="twitter:image" content="https://doodlepoker.com/img/og.png">
+<link rel="canonical" href="https://doodlepoker.com/features.html">
+<style>
+  @font-face { font-family: "Permanent Marker"; src: url("fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Saira Stencil One"; src: url("fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --teal-dark: #0f7a6d; --orange: #ff5a36; --sky: #cfe8ff; --dusk: #574a69; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  img { max-width: 100%; height: auto; display: block; }
+  svg.mark-svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--paper); padding: 8px 12px; z-index: 5; }
+  .skip:focus { left: 8px; top: 8px; }
+  header.top { max-width: 960px; margin: 0 auto; padding: 18px 16px 0; text-align: center; }
+  header.top a.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.5rem; }
+  header.top .mark-svg { width: 40px; height: 40px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; margin: 10px 0 0; font-weight: 700; font-size: 0.98rem; }
+  nav a { color: var(--ink); text-decoration: none; padding: 4px 2px; border-bottom: 3px solid transparent; }
+  nav a:hover { border-bottom-color: var(--teal); }
+  nav a[aria-current] { border-bottom-color: var(--orange); }
+  main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
+  .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
+  .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
+  @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
+  h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
+  h1 { font-size: 2.3rem; line-height: 1.15; margin: 0.1em 0 0.3em; }
+  h2 { color: var(--teal-dark); font-size: 1.55rem; line-height: 1.2; margin: 1.3em 0 0.3em; }
+  h3 { font-size: 1.2rem; margin: 1.2em 0 0.2em; }
+  .card > h2:first-child, .card > h1:first-child { margin-top: 0; }
+  p { margin: 0.6em 0; }
+  a { color: var(--teal-dark); }
+  a:hover { color: var(--orange); }
+  :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+  ul, ol { padding-left: 1.3em; margin: 0.6em 0; }
+  li { margin: 0.3em 0; }
+  .tag { color: var(--teal-dark); font-family: "Permanent Marker", cursive; font-size: 1.3rem; margin: 0 0 0.6em; }
+  .hero { text-align: center; }
+  .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
+  .hero h1 { font-size: 2.8rem; }
+  .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
+  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
+  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 14px; background: var(--teal); color: #fff; text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
+  .button.alt { background: #fff; color: var(--ink); }
+  .button:hover { color: #fff; background: var(--teal-dark); }
+  .button.alt:hover { color: var(--ink); background: var(--sky); }
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
+  @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  .pic img, .shot { border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); width: 100%; }
+  .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
+  .pic { margin: 0; }
+  .shot { aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
+  .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
+  .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
+  .mini { border: 3px solid var(--ink); border-radius: 14px; padding: 14px 16px; background: #fff; }
+  .mini h3 { margin-top: 0; color: var(--teal-dark); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
+  .toc a { font-weight: 700; }
+  .steps { list-style: none; counter-reset: s; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; background: var(--teal); color: #fff; font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
+  .note { border-left: 6px solid var(--orange); padding: 2px 0 2px 14px; margin: 1em 0; }
+  details { border: 3px solid var(--ink); border-radius: 14px; background: #fff; margin: 12px 0; }
+  summary { cursor: pointer; padding: 12px 16px; font-family: "Permanent Marker", cursive; font-size: 1.15rem; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
+  details[open] summary::before { content: "–"; }
+  details > div { padding: 0 16px 12px; }
+  .release { border-top: 3px dashed var(--ink); padding-top: 14px; margin-top: 20px; }
+  .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
+  footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
+  footer nav { font-size: 0.9rem; }
+  footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: #fff; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--ink); }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+<header class="top">
+  <a class="brand" href="./"><svg class="mark-svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg><span>Doodle Poker</span></a>
+  <nav aria-label="Pages"><a href="./">Home</a><a href="features.html" aria-current="page">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+</header>
+<main id="main">
+<section class="card narrow">
+  <h1>What it does</h1>
+  <p>Doodle Poker is a notebook for live No Limit Hold’em. Here is what is in it today, in groups. A few things need an internet connection and your own Claude key; they are marked, and the rest works with no signal.</p>
+  <ul class="toc"><li><a href="#hands">Recording hands</a></li><li><a href="#sessions">Sessions, places and games</a></li><li><a href="#people">People</a></li><li><a href="#book">The Doodle Book</a></li><li><a href="#study">Study tools</a></li><li><a href="#money">Money and stats</a></li><li><a href="#data">Your data</a></li></ul>
+</section>
+<section class="card tilt-l" id="hands">
+  <div class="feature">
+    <figure class="pic"><img src="img/hands.png" alt="Five hand-drawn playing cards in a row: queen of hearts, nine of spades, nine of diamonds, four of clubs and ace of hearts" width="1200" height="560" loading="lazy"><figcaption>Cards drawn with the app’s own suit signs.</figcaption></figure>
+    <div>
+      <h2>Recording hands</h2>
+      <p>Record a hand as it happens, or write it down afterwards. The app works out the pot, the side pots and who won.</p>
+      <ul><li>Tap through a hand on a drawn table: 2 to 10 players, positions, stacks, cards, and every fold, check, call, bet, raise and all-in. Antes, straddles and rake are covered.</li><li>Replay a saved hand step by step, forward and back.</li><li><strong>Quick Hand:</strong> type a hand in your own shorthand with a keyboard made for it. Typing and saving work with no signal.</li><li>Search and filter your hands by cards, name, tag or note. Mark a hand “To review”.</li><li>Keep photos with a hand, and doodle on them. Paste in a hand history in the PokerStars layout.</li><li>Share a hand as text or as a picture. Export hands as a spreadsheet (CSV) or as text hand histories.</li><li><strong>Optional:</strong> with your own Claude key, have a hand reviewed, fix a hand by describing the change, or build a hand from a photo of the table. Without a key you can copy the hand to any AI app you like.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-r" id="sessions">
+  <div class="feature flip">
+    <figure class="pic"><img src="img/sessions.png" alt="Six poker chips seen from above, worth 1, 5, 25, 100, 500 and 1,000" width="1200" height="560" loading="lazy"><figcaption>The app’s own poker chips.</figcaption></figure>
+    <div>
+      <h2>Sessions, places and games</h2>
+      <p>Sit down, play, cash out. The app keeps the time, the money and the breaks.</p>
+      <ul><li>Start a session with a place, a game, a currency and a buy-in. It can be a cash game or a tournament (buy-in, fee and starting chips).</li><li>Top up, set your stack, take chips off, cash out, and go on a break. A quick money button on the Home screen does it from anywhere.</li><li>Plan a session ahead and add it to your phone’s calendar. Home shows the next one and counts down to it.</li><li><strong>Waiting for a seat:</strong> note when you arrive, sit down later, and the app keeps the wait. Averages by place and by weekday are in your stats. A place can hold the number to ring or text to join the queue.</li><li>Reminders for breaks, stack updates and your own missions. You choose which are on in Settings.</li><li>Notes, tags and star ratings for each session, and a Spot check to mark a hand to look at later.</li><li>Places (casinos, card rooms, home games) with their games, blinds, currency and time zone. A bucket list of places and games you want to try.</li><li>A Table tab for who is sitting where, who has left, and who has a drink.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-l" id="people">
+  <div class="feature">
+    <figure class="pic"><img src="img/people.png" alt="Six hand-drawn player faces: a shark, a fish, a whale, a donkey, an angry player and a drunk player with a beer" width="824" height="654" loading="lazy"><figcaption>Some of the player types, drawn by the app.</figcaption></figure>
+    <div>
+      <h2>People</h2>
+      <p>Keep a page on everyone you play with, with a drawn face so you remember who is who.</p>
+      <ul><li>Draw a face from parts (hair, eyes, glasses, hats and more), or describe the person in words and let the app build the face.</li><li>Give each person a type: TAG, nit, fish and so on, or your own. Add notes, with alert categories for the things you must not forget.</li><li>Star ratings for how someone plays.</li><li>Spells: mark when someone is on tilt, drunk or tired, with a timer.</li><li>Links between players (friends, for example), and a list of funny things said at the table.</li><li>Share a person’s “passport” as a picture. Keep a page on yourself too.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-r" id="book">
+  <div class="feature flip">
+    <figure class="pic"><img src="img/book.png" alt="Five playing-card backs in different designs and colours" width="1200" height="470" loading="lazy"><figcaption>Card backs you can design yourself.</figcaption></figure>
+    <div>
+      <h2>The Doodle Book</h2>
+      <p>An endless scrapbook for your poker. Stick in hands, photos and notes, and draw all over them.</p>
+      <ul><li>Pages with pens, a spray can, text on sticky notes, photos, stamps and scissors. Undo whenever you slip.</li><li>Put the picture of a hand on a page.</li><li><strong>Doodle Vault:</strong> every doodle you have made anywhere in the app, in one place, searchable by words and dates.</li><li>Design your own table felts and card backs.</li><li>The Book and the Vault are included in your backups.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-l" id="study">
+  <div class="feature">
+    <figure class="pic"><img src="img/study.png" alt="A 13 by 13 grid of starting hands, coloured to show which to raise, call or fold" width="1200" height="560" loading="lazy"><figcaption>A hand-range grid: the app’s own opening range for the button.</figcaption></figure>
+    <div>
+      <h2>Study tools</h2>
+      <p>Practise away from the table. These all work with no signal.</p>
+      <ul><li><strong>Poker Ranges:</strong> raise, call and fold grids for each position that you can edit and copy. They start from the app’s own ranges.</li><li><strong>Range Game:</strong> hands come up and you tap fold, call or raise. The ones you miss come back more often.</li><li><strong>Equity Game:</strong> guess your chance of winning, then see it.</li><li><strong>Play Poker:</strong> No Limit Hold’em against computer players, for play money only. Nothing real is at stake.</li><li>A list of your own abbreviations for the shorthand you type.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-r" id="money">
+  <div class="feature flip">
+    <figure class="pic"><!-- SCREENSHOT PLACEHOLDER: Statistics, Calendar tab (the heat map) --><div class="shot" role="img" aria-label="A phone screenshot will go here"><strong>Screenshot coming</strong><span>Statistics, Calendar tab (the heat map)</span></div></figure>
+    <div>
+      <h2>Money and stats</h2>
+      <p>See how you are really doing, in your own numbers.</p>
+      <ul><li>A bankroll graph, and a calendar heat map of the days you won and lost.</li><li><strong>My stats:</strong> ready-made questions about your own play, such as how you do by day of the week, and your own questions to add.</li><li>Records: streaks, best and worst, lifetime totals, how long you wait for a seat, and a fortune teller that is just for fun.</li><li><strong>My year:</strong> a review of the year you can share as a picture, with or without the amounts.</li><li>Goals for hours, sessions or profit, shown on Home.</li><li>Expenses with receipt photos, trips, and a tax report as a PDF.</li><li>A home currency, so everything adds up in one currency. Exchange rates are found for you, or you can type them.</li></ul>
+      
+    </div>
+  </div>
+</section>
+<section class="card tilt-l" id="data">
+  <div class="feature">
+    <figure class="pic"><!-- SCREENSHOT PLACEHOLDER: Settings, Backup and restore page --><div class="shot" role="img" aria-label="A phone screenshot will go here"><strong>Screenshot coming</strong><span>Settings, Backup and restore page</span></div></figure>
+    <div>
+      <h2>Your data</h2>
+      <p>It is yours. It stays on your phone, and you decide what leaves it.</p>
+      <ul><li><strong>Backup and restore:</strong> save everything to one file (<code>.doodle-poker</code>), keep it wherever you like, and restore from it on this phone or a new one. The app reminds you when it has been a while.</li><li>The Bin keeps deleted things for 30 days, and Undo is there right after you delete.</li><li>Export hands, sessions and expenses as spreadsheets or text; expenses, trips and the tax report as PDF.</li><li><strong>Import:</strong> choose spreadsheets, PDFs, pictures or text files and let Claude read them (needs your own key); you tick what to bring in, and can undo the import.</li><li>Lock the app with your fingerprint, face or screen lock. Hide the screen when you leave the app. Hide amounts and your hole cards at the table.</li><li>Find a feature: a search that takes you to any setting or page.</li></ul>
+      
+    </div>
+  </div>
+</section>
+</main>
+<footer>
+  <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+  <p>Doodle Poker · coming soon · <a href="mailto:mkajspam@gmail.com">mkajspam@gmail.com</a></p>
+</footer>
+</body>
+</html>

@@ -3,48 +3,168 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doodle Poker</title>
-<meta name="description" content="Doodle Poker — an app for recording your No Limit Hold’em poker hands and sessions.">
+<title>Doodle Poker — a notebook for your live poker</title>
+<meta name="description" content="Doodle Poker is a hand-drawn notebook for live poker: record hands and sessions, keep notes on the people you play with, and see how you are really doing. Coming soon.">
 <link rel="icon" href="favicon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doodle Poker">
+<meta property="og:title" content="Doodle Poker — a notebook for your live poker">
+<meta property="og:description" content="Doodle Poker is a hand-drawn notebook for live poker: record hands and sessions, keep notes on the people you play with, and see how you are really doing. Coming soon.">
+<meta property="og:url" content="https://doodlepoker.com/">
+<meta property="og:image" content="https://doodlepoker.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Doodle Poker: every hand tells a story">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Doodle Poker — a notebook for your live poker">
+<meta name="twitter:description" content="Doodle Poker is a hand-drawn notebook for live poker: record hands and sessions, keep notes on the people you play with, and see how you are really doing. Coming soon.">
+<meta name="twitter:image" content="https://doodlepoker.com/img/og.png">
+<link rel="canonical" href="https://doodlepoker.com/">
 <style>
-  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --sky: #cfe8ff; }
+  @font-face { font-family: "Permanent Marker"; src: url("fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Saira Stencil One"; src: url("fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --teal-dark: #0f7a6d; --orange: #ff5a36; --sky: #cfe8ff; --dusk: #574a69; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 680px; margin: 32px auto; padding: 28px 24px 32px; background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; }
-  @media (max-width: 720px) { main { margin: 16px; } }
-  h1, h2, .brand { font-family: "Permanent Marker", cursive; font-weight: 400; }
-  h1 { font-size: 2.4rem; margin: 0.2em 0 0.1em; text-align: center; }
-  h2 { color: var(--teal); font-size: 1.35rem; margin: 1.6em 0 0.3em; }
-  .tag { text-align: center; color: var(--teal); font-family: "Permanent Marker", cursive; font-size: 1.2rem; margin: 0 0 1em; }
-  .mark { display: flex; justify-content: center; }
-  svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
-  nav { display: flex; gap: 18px; justify-content: center; margin: 0 0 18px; font-weight: 700; }
-  nav a, a { color: var(--teal); }
-  nav a[aria-current] { color: var(--ink); text-decoration: none; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  img { max-width: 100%; height: auto; display: block; }
+  svg.mark-svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--paper); padding: 8px 12px; z-index: 5; }
+  .skip:focus { left: 8px; top: 8px; }
+  header.top { max-width: 960px; margin: 0 auto; padding: 18px 16px 0; text-align: center; }
+  header.top a.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.5rem; }
+  header.top .mark-svg { width: 40px; height: 40px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; margin: 10px 0 0; font-weight: 700; font-size: 0.98rem; }
+  nav a { color: var(--ink); text-decoration: none; padding: 4px 2px; border-bottom: 3px solid transparent; }
+  nav a:hover { border-bottom-color: var(--teal); }
+  nav a[aria-current] { border-bottom-color: var(--orange); }
+  main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
+  .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
+  .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
+  @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
+  h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
+  h1 { font-size: 2.3rem; line-height: 1.15; margin: 0.1em 0 0.3em; }
+  h2 { color: var(--teal-dark); font-size: 1.55rem; line-height: 1.2; margin: 1.3em 0 0.3em; }
+  h3 { font-size: 1.2rem; margin: 1.2em 0 0.2em; }
+  .card > h2:first-child, .card > h1:first-child { margin-top: 0; }
+  p { margin: 0.6em 0; }
+  a { color: var(--teal-dark); }
+  a:hover { color: var(--orange); }
+  :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+  ul, ol { padding-left: 1.3em; margin: 0.6em 0; }
+  li { margin: 0.3em 0; }
+  .tag { color: var(--teal-dark); font-family: "Permanent Marker", cursive; font-size: 1.3rem; margin: 0 0 0.6em; }
+  .hero { text-align: center; }
+  .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
+  .hero h1 { font-size: 2.8rem; }
+  .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
+  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
   .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 14px; background: var(--teal); color: #fff; text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
-  .center { text-align: center; }
-  ul { padding-left: 1.2em; }
-  footer { margin-top: 2em; font-size: 0.85rem; opacity: 0.7; text-align: center; }
+  .button.alt { background: #fff; color: var(--ink); }
+  .button:hover { color: #fff; background: var(--teal-dark); }
+  .button.alt:hover { color: var(--ink); background: var(--sky); }
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
+  @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  .pic img, .shot { border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); width: 100%; }
+  .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
+  .pic { margin: 0; }
+  .shot { aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
+  .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
+  .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
+  .mini { border: 3px solid var(--ink); border-radius: 14px; padding: 14px 16px; background: #fff; }
+  .mini h3 { margin-top: 0; color: var(--teal-dark); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
+  .toc a { font-weight: 700; }
+  .steps { list-style: none; counter-reset: s; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; background: var(--teal); color: #fff; font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
+  .note { border-left: 6px solid var(--orange); padding: 2px 0 2px 14px; margin: 1em 0; }
+  details { border: 3px solid var(--ink); border-radius: 14px; background: #fff; margin: 12px 0; }
+  summary { cursor: pointer; padding: 12px 16px; font-family: "Permanent Marker", cursive; font-size: 1.15rem; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
+  details[open] summary::before { content: "–"; }
+  details > div { padding: 0 16px 12px; }
+  .release { border-top: 3px dashed var(--ink); padding-top: 14px; margin-top: 20px; }
+  .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
+  footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
+  footer nav { font-size: 0.9rem; }
+  footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: #fff; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--ink); }
 </style>
 </head>
 <body>
-<main>
-<div class="mark"><svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg></div>
-<h1>Doodle Poker</h1>
-<p class="tag">Every hand tells a story.</p>
-<nav><a href="./" aria-current="page">Home</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
-<p>A hand-drawn notebook for your No Limit Hold’em poker.</p>
-<ul>
-  <li><strong>Record a hand</strong> — who sat where, the cards, every bet and raise.</li>
-  <li><strong>Record a session</strong> — what you sat down with, top-ups, cash-outs, and your breaks.</li>
-</ul>
-<p class="center"><em>Coming soon.</em></p>
-<h2>Private</h2>
-<p>No ads, no accounts, no tracking. See the <a href="privacy.html">privacy policy</a>.</p>
-<footer>Doodle Poker · <a href="./">Home</a> · <a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></footer>
+<a class="skip" href="#main">Skip to the page</a>
+<header class="top">
+  <a class="brand" href="./"><svg class="mark-svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg><span>Doodle Poker</span></a>
+  <nav aria-label="Pages"><a href="./" aria-current="page">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+</header>
+<main id="main">
+<section class="card hero">
+  <svg class="mark-svg" width="110" height="110" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg>
+  <h1>Doodle Poker</h1>
+  <p class="tag">Every hand tells a story.</p>
+  <p class="lead">A hand-drawn notebook for your live poker: record your hands and sessions, keep notes on the people you play with, and see how you are really doing.</p>
+  <p><span class="soon">Coming soon</span></p>
+  <div class="buttons"><a class="button" href="features.html">See what it does</a><a class="button alt" href="faq.html">Questions and answers</a></div>
+</section>
+<section class="card tilt-l" id="hands">
+  <div class="feature">
+    <figure class="pic"><img src="img/hands.png" alt="Five hand-drawn playing cards in a row: queen of hearts, nine of spades, nine of diamonds, four of clubs and ace of hearts" width="1200" height="560" loading="lazy"><figcaption>Cards drawn with the app’s own suit signs.</figcaption></figure>
+    <div>
+      <h2>Record every hand</h2>
+      <p>Tap through the table: who sat where, the cards, every bet and raise. The pot, the side pots and the winner are worked out for you.</p>
+      
+      <p><a href="features.html#hands">More about this →</a></p>
+    </div>
+  </div>
+</section>
+<section class="card tilt-r" id="sessions">
+  <div class="feature flip">
+    <figure class="pic"><img src="img/sessions.png" alt="Six poker chips seen from above, worth 1, 5, 25, 100, 500 and 1,000" width="1200" height="560" loading="lazy"><figcaption>The app’s own poker chips.</figcaption></figure>
+    <div>
+      <h2>Track every session</h2>
+      <p>What you sat down with, top-ups, cash-outs, breaks, how long you waited for a seat, and what it all came to.</p>
+      
+      <p><a href="features.html#sessions">More about this →</a></p>
+    </div>
+  </div>
+</section>
+<section class="card tilt-l" id="people">
+  <div class="feature">
+    <figure class="pic"><img src="img/people.png" alt="Six hand-drawn player faces: a shark, a fish, a whale, a donkey, an angry player and a drunk player with a beer" width="824" height="654" loading="lazy"><figcaption>Some of the player types, drawn by the app.</figcaption></figure>
+    <div>
+      <h2>Remember everyone</h2>
+      <p>A page for each player with a drawn face, a type, notes and a rating. You will know who they are before they sit down.</p>
+      
+      <p><a href="features.html#people">More about this →</a></p>
+    </div>
+  </div>
+</section>
+<section class="card tilt-r" id="book">
+  <div class="feature flip">
+    <figure class="pic"><img src="img/book.png" alt="Five playing-card backs in different designs and colours" width="1200" height="470" loading="lazy"><figcaption>Card backs you can design yourself.</figcaption></figure>
+    <div>
+      <h2>Doodle all over it</h2>
+      <p>The Doodle Book is a scrapbook for your poker: hands, photos, sticky notes, pens and a spray can.</p>
+      
+      <p><a href="features.html#book">More about this →</a></p>
+    </div>
+  </div>
+</section>
+<section class="card narrow">
+  <h2>Private</h2>
+  <p>What you record stays on your phone. No ads, no accounts, no tracking. Anything that leaves the phone does so only when you ask, and the <a href="privacy.html">privacy policy</a> lists every case.</p>
+  <div class="buttons"><a class="button alt" href="how-to.html">How to…</a><a class="button alt" href="whats-new.html">What’s new</a><a class="button alt" href="privacy.html">Privacy policy</a></div>
+</section>
 </main>
+<footer>
+  <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+  <p>Doodle Poker · coming soon · <a href="mailto:mkajspam@gmail.com">mkajspam@gmail.com</a></p>
+</footer>
 </body>
 </html>
