@@ -89,6 +89,7 @@
   summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
   details[open] summary::before { content: "–"; }
   details > div { padding: 0 16px 12px; }
+  @media (hover: hover) and (pointer: fine) { .phone-only { display: none; } } /* (the Email support button is for phones: a computer often has no mail app to open, so there the address is just written out) */
   .release { border-top: 3px dashed var(--ink); padding-top: 14px; margin-top: 20px; }
   .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
   .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
