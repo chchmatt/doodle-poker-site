@@ -75,8 +75,9 @@
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
-  .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
-  .person { position: relative; aspect-ratio: 140 / 155; }
+  .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
+  .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
+  .person.smoker { z-index: 2; }
   .person .clip { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; overflow: hidden; border-radius: 8px; }
   .person .frame { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; border: 3px solid var(--frame, #80868b); border-radius: 8px; }
   .person img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; border: 0; border-radius: 0; background: none; }
@@ -84,6 +85,12 @@
   .person .sway { position: absolute; inset: 0; animation: sway var(--sw) ease-in-out var(--sd) infinite alternate; }
   .person .lids { opacity: 0; animation: blink var(--cy) linear var(--cd) infinite; }
   /* (the movements of the app's pictures, from components/face-view.tsx: a little sway, a blink now and then, and a sip: the drink rises to the mouth, tips, and goes back) */
+  /* (the fidget spinner of Gordon's card protector: it whirls round and round, slowing down, and rests; and Blue's cigarette smoke rises, widening and fading, all the way to the top of the picture) */
+  .person .spinner { width: 22%; left: 56.9%; top: 64.35%; height: auto; aspect-ratio: 1; animation: whirl 8s linear var(--cd) infinite; }
+  @keyframes whirl { 0% { transform: rotate(0); animation-timing-function: cubic-bezier(.12, .7, .25, 1); } 32%, 100% { transform: rotate(1260deg); } }
+  .person .smoke { position: absolute; width: 0; height: 280%; pointer-events: none; }
+  .person .puff { position: absolute; left: 0; bottom: 0; width: 7cqw; height: 7cqw; border-radius: 50%; background: rgba(95, 99, 116, .55); filter: blur(1.2px); opacity: 0; animation: rise 7.5s linear var(--pd) infinite; }
+  @keyframes rise { 0% { bottom: 0; opacity: 0; transform: translateX(-50%) scale(.5); } 8% { opacity: .55; } 60% { opacity: .3; } 100% { bottom: 100%; opacity: 0; transform: translateX(calc(-50% + var(--px))) scale(4.5); } }
   @keyframes sway { from { transform: translate(-1.2%, -0.6%) rotate(-0.9deg); } to { transform: translate(1.2%, 0.6%) rotate(0.9deg); } }
   @keyframes blink { 0%, 19%, 22%, 61%, 64%, 100% { opacity: 0; } 20.5%, 62.5% { opacity: 1; } }
   @keyframes sip {
@@ -91,7 +98,7 @@
     41%, 58% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)); }
     46%, 53% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)) rotate(40deg); }
   }
-  @media (prefers-reduced-motion: reduce) { .person .sway, .person .lids, .person .drink { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .person .sway, .person .lids, .person .drink, .person .spinner { animation: none; } .person .smoke { display: none; } }
   .grid { display: grid; gap: 16px; }
   @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
   .mini { border: 3px solid var(--edge); border-radius: 14px; padding: 14px 16px; background: var(--fill); }
