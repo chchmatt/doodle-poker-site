@@ -75,6 +75,23 @@
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
+  .person { position: relative; aspect-ratio: 140 / 155; }
+  .person .clip { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; overflow: hidden; border-radius: 8px; }
+  .person .frame { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; border: 3px solid var(--frame, #80868b); border-radius: 8px; }
+  .person img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; border: 0; border-radius: 0; background: none; }
+  .person .drink { pointer-events: none; transform-origin: var(--ox) var(--oy); animation: sip var(--cy) ease-in-out var(--cd) infinite; }
+  .person .sway { position: absolute; inset: 0; animation: sway var(--sw) ease-in-out var(--sd) infinite alternate; }
+  .person .lids { opacity: 0; animation: blink var(--cy) linear var(--cd) infinite; }
+  /* (the movements of the app's pictures, from components/face-view.tsx: a little sway, a blink now and then, and a sip: the drink rises to the mouth, tips, and goes back) */
+  @keyframes sway { from { transform: translate(-1.2%, -0.6%) rotate(-0.9deg); } to { transform: translate(1.2%, 0.6%) rotate(0.9deg); } }
+  @keyframes blink { 0%, 19%, 22%, 61%, 64%, 100% { opacity: 0; } 20.5%, 62.5% { opacity: 1; } }
+  @keyframes sip {
+    0%, 35%, 64%, 100% { transform: none; }
+    41%, 58% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)); }
+    46%, 53% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)) rotate(40deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .person .sway, .person .lids, .person .drink { animation: none; } }
   .grid { display: grid; gap: 16px; }
   @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
   .mini { border: 3px solid var(--edge); border-radius: 14px; padding: 14px 16px; background: var(--fill); }
@@ -137,7 +154,7 @@
 </section>
 <section class="card tilt-l" id="people">
   <div class="feature">
-    <figure class="pic"><img src="img/people.png" alt="Six hand-drawn player faces: a shark, a fish, a whale, a donkey, an angry player and a drunk player with a beer" width="824" height="654" loading="lazy"><figcaption>Some of the player types, drawn by the app.</figcaption></figure>
+    <figure class="pic"><div class="people-board" role="img" aria-label="Nine hand-drawn players, who sway, blink and sip their drinks: a shark, a furious player, a player with a pint, a fish, an older player with a coffee, a whale, a player with red wine, a donkey and a player with a whisky"><div class="person" style="--sw:5.20s;--sd:-1.70s;--cy:9.50s;--cd:-2.10s"><div class="clip"><div class="sway"><img src="img/person-shark.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div></div><div class="person" style="--sw:5.57s;--sd:-3.77s;--cy:9.87s;--cd:-4.57s"><div class="clip"><div class="sway"><img src="img/person-tilt.png" alt="" width="400" height="480" loading="lazy"><img class="lids" src="img/person-tilt-lids.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div></div><div class="person" style="--sw:5.94s;--sd:-0.84s;--cy:10.24s;--cd:-7.04s;--dx:18.57;--dy:-11.61;--ox:37.14%;--oy:63.87%"><div class="clip"><div class="sway"><img src="img/person-drunk.png" alt="" width="400" height="480" loading="lazy"><img class="lids" src="img/person-drunk-lids.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div><img class="drink" src="img/person-drunk-drink.png" alt="" width="560" height="620" loading="lazy"></div><div class="person" style="--sw:5.31s;--sd:-1.91s;--cy:9.61s;--cd:-0.51s"><div class="clip"><div class="sway"><img src="img/person-fish.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div></div><div class="person" style="--sw:5.68s;--sd:-3.98s;--cy:9.98s;--cd:-2.98s;--dx:13.93;--dy:-21.16;--ox:41.79%;--oy:73.42%"><div class="clip"><div class="sway"><img src="img/person-omc.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div><img class="drink" src="img/person-omc-drink.png" alt="" width="560" height="620" loading="lazy"></div><div class="person" style="--sw:6.05s;--sd:-1.05s;--cy:10.35s;--cd:-5.45s"><div class="clip"><div class="sway"><img src="img/person-whale.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div></div><div class="person" style="--sw:5.42s;--sd:-2.12s;--cy:9.72s;--cd:-6.92s;--dx:19.29;--dy:-18.06;--ox:36.43%;--oy:70.32%"><div class="clip"><div class="sway"><img src="img/person-wine.png" alt="" width="400" height="480" loading="lazy"><img class="lids" src="img/person-wine-lids.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div><img class="drink" src="img/person-wine-drink.png" alt="" width="560" height="620" loading="lazy"></div><div class="person" style="--sw:5.79s;--sd:-4.19s;--cy:10.09s;--cd:-1.39s"><div class="clip"><div class="sway"><img src="img/person-donkey.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div></div><div class="person" style="--sw:6.16s;--sd:-1.26s;--cy:10.46s;--cd:-3.86s;--dx:20.71;--dy:-21.29;--ox:35.00%;--oy:73.55%"><div class="clip"><div class="sway"><img src="img/person-whisky.png" alt="" width="400" height="480" loading="lazy"><img class="lids" src="img/person-whisky-lids.png" alt="" width="400" height="480" loading="lazy"></div></div><div class="frame"></div><img class="drink" src="img/person-whisky-drink.png" alt="" width="560" height="620" loading="lazy"></div></div></figure>
     <div>
       <h2>People</h2>
       <p>Keep a page on everyone you play with, with a drawn face so you remember who is who.</p>
