@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#202124">
 <title>Features — Doodle Poker</title>
 <meta name="description" content="Everything Doodle Poker does: record hands, track sessions, keep notes on people, a Doodle Book, study tools, money and stats, and your own backup.">
 <link rel="icon" href="favicon.png">
@@ -23,7 +25,8 @@
 <style>
   @font-face { font-family: "Permanent Marker"; src: url("fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
   @font-face { font-family: "Saira Stencil One"; src: url("fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-  :root { --paper: #fffaf0; --ink: #2d2a3e; --teal: #19a090; --teal-dark: #0f7a6d; --orange: #ff5a36; --sky: #cfe8ff; --dusk: #574a69; }
+  /* (dark, like the app: its page, card and writing colours from src/theme.ts; the hand-drawn pictures keep their paper) */
+  :root { color-scheme: dark; --sky: #202124; --paper: #2b2c2f; --fill: #3c4043; --ink: #e8eaed; --edge: #80868b; --teal: #19a090; --teal-btn: #0f7a6d; --teal-dark: #3cc4b3; --orange: #ff5a36; --pic: #fffaf0; --dusk: #574a69; }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -39,7 +42,7 @@
   nav a:hover { border-bottom-color: var(--teal); }
   nav a[aria-current] { border-bottom-color: var(--orange); }
   main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
-  .card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
+  .card { background: var(--paper); border: 3px solid var(--edge); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
   .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
   @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
   h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
@@ -58,44 +61,44 @@
   .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
   .hero h1 { font-size: 2.8rem; }
   .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
-  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
+  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
   .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
-  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 14px; background: var(--teal); color: #fff; text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
-  .button.alt { background: #fff; color: var(--ink); }
-  .button:hover { color: #fff; background: var(--teal-dark); }
+  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--edge); border-radius: 14px; background: var(--teal-btn); color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
+  .button.alt { background: var(--fill); color: var(--ink); }
+  .button:hover { color: var(--ink); background: var(--teal); }
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
-  .pic img, .shot { border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); width: 100%; }
+  .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
-  .shot { aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
+  .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
   .grid { display: grid; gap: 16px; }
   @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
-  .mini { border: 3px solid var(--ink); border-radius: 14px; padding: 14px 16px; background: #fff; }
+  .mini { border: 3px solid var(--edge); border-radius: 14px; padding: 14px 16px; background: var(--fill); }
   .mini h3 { margin-top: 0; color: var(--teal-dark); }
   .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
   .toc a { font-weight: 700; }
   .steps { list-style: none; counter-reset: s; padding: 0; }
   .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
-  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--ink); border-radius: 50%; background: var(--teal); color: #fff; font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--edge); border-radius: 50%; background: var(--teal-btn); color: var(--ink); font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
   .note { border-left: 6px solid var(--orange); padding: 2px 0 2px 14px; margin: 1em 0; }
-  details { border: 3px solid var(--ink); border-radius: 14px; background: #fff; margin: 12px 0; }
+  details { border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); margin: 12px 0; }
   summary { cursor: pointer; padding: 12px 16px; font-family: "Permanent Marker", cursive; font-size: 1.15rem; list-style: none; }
   summary::-webkit-details-marker { display: none; }
   summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
   details[open] summary::before { content: "–"; }
   details > div { padding: 0 16px 12px; }
   @media (hover: hover) and (pointer: fine) { .phone-only { display: none; } } /* (the Email support button is for phones: a computer often has no mail app to open, so there the address is just written out) */
-  .release { border-top: 3px dashed var(--ink); padding-top: 14px; margin-top: 20px; }
+  .release { border-top: 3px dashed var(--edge); padding-top: 14px; margin-top: 20px; }
   .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
   .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
   footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
   footer nav { font-size: 0.9rem; }
   footer p { margin: 0.6em 0 0; opacity: 0.8; }
-  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: #fff; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--ink); }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: var(--fill); padding: 1px 5px; border-radius: 6px; border: 1px solid var(--edge); }
 </style>
 </head>
 <body>
