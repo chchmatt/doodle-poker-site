@@ -1,21 +1,11 @@
 // The viewer of a published hand on the website (doodlepoker.com/hand/<cards>/?id=<id>): plain JavaScript, no framework and no build step. scripts/make-site.js copies this file to hand/viewer.js in the site.
-// It loads ../../hands/<id>.json (the shape of src/game/published-hand.ts), checks it, and shows the table, the cards, the actions and the pot, a step at a time. The functions that work things out
+// It loads the hand by ?id= from the cloud's storage (or this site's own hands/ for a sample) (the shape of src/game/published-hand.ts), checks it, and shows the table, the cards, the actions and the pot, a step at a time. The functions that work things out
 // (comboOf, frames) are plain and are tested by npm test; the part that draws needs a page.
 (function (root) {
   'use strict';
   var RANKS = '23456789TJQKA';
   var SUITS = 'shdc';
   var NAMES = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
-
-  /** The name of a hand's two hole cards in an address: higher rank first, and for a pair the suits in the order s, h, d, c ("Kc9c", "AsAc"); null if they are not two different cards. */
-  function comboOf(cards) {
-    if (!cards || cards.length !== 2 || cards[0] === cards[1]) return null;
-    for (var i = 0; i < 2; i++) if (typeof cards[i] !== 'string' || cards[i].length !== 2 || RANKS.indexOf(cards[i][0]) < 0 || SUITS.indexOf(cards[i][1]) < 0) return null;
-    var c = cards.slice().sort(function (a, b) {
-      return RANKS.indexOf(b[0]) - RANKS.indexOf(a[0]) || SUITS.indexOf(a[1]) - SUITS.indexOf(b[1]);
-    });
-    return c[0] + c[1];
-  }
 
   function money(h, n) {
     return h.currency + String(Math.round(n * 100) / 100).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -26,10 +16,9 @@
     return '?';
   }
 
-  /** Is this a published hand the viewer can show, for the page of this combination of cards? */
-  function usable(h, combo) {
-    if (!h || h.v !== 1 || !Array.isArray(h.seats) || h.seats.length < 2 || !h.hero || !Array.isArray(h.streets)) return false;
-    if (comboOf(h.hero.cards) !== combo) return false;
+  /** Is this a published hand the viewer can show? */
+  function usable(h) {
+    if (!h || (h.v !== 1 && h.v !== 2) || !Array.isArray(h.seats) || h.seats.length < 2 || !h.hero || !Array.isArray(h.streets)) return false;
     return h.seats.some(function (s) {
       return s.seat === h.hero.seat;
     });
@@ -149,7 +138,7 @@
       .join(' ');
   }
   function missing(el) {
-    el.innerHTML = '<h2>Hand not found</h2><p>This link does not lead to a hand. The address may have a typo, or the hand may have been taken down.</p><div class="buttons"><a class="button" href="../../">Doodle Poker home</a></div>';
+    el.innerHTML = '<h2>Hand not found</h2><p>This link does not lead to a hand. The address may have a typo, or the hand may have been taken down.</p><div class="buttons"><a class="button" href="/">Doodle Poker home</a></div>';
     el.removeAttribute('aria-busy');
   }
 
@@ -193,7 +182,7 @@
             '<div class="' + cls + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%">' +
             (s.seat === h.button ? '<span class="hv-btn" title="Dealer button">D</span>' : '') +
             (cards ? '<div class="hv-hole">' + cards.map(function (c) { return card(c, 'sm'); }).join('') + '</div>' : '') +
-            '<div class="hv-name">' + esc(s.label) + '</div>' +
+            '<div class="hv-name">' + esc(s.label) + (h.positions !== false && s.position && s.position !== s.label ? ' <small>' + esc(s.position) + '</small>' : '') + '</div>' +
             '<div class="hv-stack">' + money(h, f.stacks[s.seat]) + '</div>' +
             '<div class="hv-said">' + (f.said[s.seat] ? esc(f.said[s.seat]) : '&nbsp;') + '</div>' +
             '</div>'
@@ -230,20 +219,39 @@
     draw();
   }
 
+  var BLOB = 'https://doodlepokerhands.blob.core.windows.net'; // (where a published hand and its picture live: hands/<id>.json, images/<id>.jpg)
+  var SUPPORT = 'support@doodlepoker.com';
+
+  /** Where a hand's file is: the cloud's storage for an id the cloud made (22 letters and digits), or this site's own for the sample hands (sample-43). Null for anything else. */
+  function sourceOf(id) {
+    if (/^[0-9A-Za-z]{22}$/.test(id)) return BLOB + '/hands/' + id + '.json';
+    if (/^sample-[0-9]{1,6}$/.test(id)) return '/hands/' + id + '.json';
+    return null;
+  }
+
+  /** What is added round the hand once it is shown: the cards in the heading (the page may be for other cards than the hand's, or for none), the doodled table if there is a picture, and the way to report it. */
+  function extras(el, h, id) {
+    var title = document.querySelector('.hv-title');
+    if (title && h.hero.cards.length === 2) title.innerHTML = h.hero.cards.map(function (c) { return card(c, 'md'); }).join('');
+    if (h.doodle && /^[0-9A-Za-z]{22}\.jpg$/.test(h.doodle)) el.insertAdjacentHTML('afterbegin', '<img class="hv-doodle" src="' + BLOB + '/images/' + h.doodle + '" alt="The table, as it was doodled" width="560" loading="lazy">');
+    el.insertAdjacentHTML('beforeend', '<p class="center hv-report"><a href="mailto:' + SUPPORT + '?subject=' + encodeURIComponent('Report a hand') + '&body=' + encodeURIComponent('Hand id: ' + id + '\nWhat is wrong with it: ') + '">Report this hand</a></p>');
+  }
+
   function start() {
     var el = document.getElementById('hand');
     if (!el) return;
-    var combo = el.getAttribute('data-combo');
     var id = new URLSearchParams(location.search).get('id');
-    if (!id || !/^[A-Za-z0-9._-]+$/.test(id)) return missing(el);
-    fetch('../../hands/' + id + '.json', { cache: 'no-cache' })
+    var source = id ? sourceOf(id) : null;
+    if (!source) return missing(el);
+    fetch(source, { cache: 'no-cache' })
       .then(function (r) {
         if (!r.ok) throw new Error('not found');
         return r.json();
       })
       .then(function (h) {
-        if (!usable(h, combo)) return missing(el);
+        if (!usable(h)) return missing(el);
         show(el, h);
+        extras(el, h, id);
       })
       .catch(function () {
         missing(el);
@@ -254,6 +262,6 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { comboOf: comboOf, frames: frames, usable: usable, money: money };
-  else root.DoodlePokerHand = { comboOf: comboOf, frames: frames };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { frames: frames, usable: usable, money: money, sourceOf: sourceOf };
+  else root.DoodlePokerHand = { frames: frames };
 })(typeof window !== 'undefined' ? window : this);
