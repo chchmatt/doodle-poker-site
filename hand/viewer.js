@@ -127,8 +127,19 @@
   }
   function card(c, cls) {
     var r = c[0] === 'T' ? '10' : c[0];
-    var red = c[1] === 'h' || c[1] === 'd';
-    return '<span class="pc' + (red ? ' red' : '') + (cls ? ' ' + cls : '') + '" aria-label="' + r + ' of ' + { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' }[c[1]] + '"><b>' + r + '</b><i class="su su-' + c[1] + '"></i></span>';
+    return '<span class="pc k-' + c[1] + (cls ? ' ' + cls : '') + '" aria-label="' + r + ' of ' + { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' }[c[1]] + '"><b>' + r + '</b><i class="su su-' + c[1] + '"></i></span>';
+  }
+  // How the cards look: the player's own card style and suit colours (the same colours as the app's src/game/card-look.ts), set as variables for the whole page.
+  var LOOKS = {
+    classic: { face: '#fffaf0', edge: '#2d2a3e', black: '#2d2a3e', red: '#e63946', blue: '#1f6fd1', green: '#2f9e44' },
+    dark: { face: '#2b2c2f', edge: '#5f6368', black: '#e8eaed', red: '#ff5a5f', blue: '#5ea1ff', green: '#4cc468' },
+  };
+  /** The variables for a published hand's cards ({style, colours}); null if it says nothing (then the cream card with two colours). */
+  function cardVars(cards) {
+    if (!cards || !LOOKS[cards.style] || (cards.colours !== 2 && cards.colours !== 4)) return null;
+    var l = LOOKS[cards.style];
+    var four = cards.colours === 4;
+    return { '--cf': l.face, '--ce': l.edge, '--ks': l.black, '--kh': l.red, '--kd': four ? l.blue : l.red, '--kc': four ? l.green : l.black };
   }
   function cardsText(cards) {
     return cards
@@ -250,6 +261,8 @@
       })
       .then(function (h) {
         if (!usable(h)) return missing(el);
+        var vars = cardVars(h.cards);
+        if (vars) for (var k in vars) document.documentElement.style.setProperty(k, vars[k]);
         show(el, h);
         extras(el, h, id);
       })
@@ -262,6 +275,6 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { frames: frames, usable: usable, money: money, sourceOf: sourceOf };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { frames: frames, usable: usable, money: money, sourceOf: sourceOf, cardVars: cardVars };
   else root.DoodlePokerHand = { frames: frames };
 })(typeof window !== 'undefined' ? window : this);
