@@ -23,6 +23,7 @@
 <meta name="twitter:image" content="https://doodlepoker.com/img/og.png">
 <link rel="canonical" href="https://doodlepoker.com/privacy.html">
 <style>
+  [hidden] { display: none !important; }
   .share { max-width: 960px; margin: 28px auto 8px; padding: 0 16px; text-align: center; }
   .share p { margin: 0 0 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; }
   .share ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -157,7 +158,7 @@
 <p>None of this is sent to us or to anyone else. It stays on your device until you delete it, uninstall the app or clear its data.</p>
 <h2>Optional: publishing a hand</h2>
 <p>In the app you can choose <strong>Share, then doodlepoker.com</strong> on a hand. <strong>Nothing is uploaded unless you do.</strong> Then the hand, as you chose to publish it (you choose the names, which notes, tags, pictures and AI reviews go with it, and names can be replaced by “Villain 1” and so on), and, when there is one, the picture of its table, are sent to a small service we run and are stored on <strong>Microsoft Azure servers in the United States</strong>. The hand is then <strong>visible to anyone who has its link</strong> until you take it down in the app (Settings, My published hands), or until the end of the time you chose. Its address is long and random so it cannot be guessed, the page is not listed on search engines, and we do not link to it.</p>
-<p>To tell your hand from other people’s, the app makes a secret key once and keeps it in your phone’s secure store. It is sent with each publish and unpublish, and we keep only a one-way scrambled copy of it (a hash) next to the hand; it is not part of a backup and is not linked to your name, email or any account. We also count how many hands an owner and an internet address publish in a day, to stop abuse; the address is kept only as a scrambled copy and only for a day or two. Microsoft, as our host, may keep ordinary server logs. We do not use what you publish for anything else, and if you or anyone reports a hand to <a href="mailto:support@doodlepoker.com">support@doodlepoker.com</a> we may take it down.</p>
+<p>To tell your hand from other people’s, the app makes a secret key once and keeps it in your phone’s secure store. It is sent with each publish and unpublish, and we keep only a one-way scrambled copy of it (a hash) next to the hand; it is not part of a backup and is not linked to your name, email or any account. We also count how many hands an owner and an internet address publish in a day, to stop abuse; the address is kept only as a scrambled copy and only for a day or two. Microsoft, as our host, may keep ordinary server logs. We do not use what you publish for anything else, and if you or anyone reports a hand through the <a href="contact/">Contact page</a> we may take it down.</p>
 <h2>Optional: Claude</h2>
 <p>The app can use Claude, made by Anthropic. It is <strong>off until you paste in your own Claude API key</strong> in Settings. Nothing is sent to Anthropic before that. After that, each time you tap a button that uses Claude, what the feature needs goes from your phone straight to Anthropic (<code>api.anthropic.com</code>), using your key. We never receive it. What Anthropic does with it is covered by <a href="https://www.anthropic.com/legal/privacy">Anthropic’s privacy policy</a>.</p>
 <ul>
@@ -199,7 +200,7 @@
 <h2>Changes</h2>
 <p>If the app ever changes in a way that affects your privacy (for example, if a new feature sends data to a service: the publishing of a hand above is such a feature), this policy will be updated first, and the date above changed.</p>
 <h2>Contact</h2>
-<p>Questions about privacy? Email <a href="mailto:privacy@doodlepoker.com">privacy@doodlepoker.com</a>.</p>
+<p>Questions about privacy? Use the <a href="contact/">Contact page</a>.</p>
 </section>
 </main>
 <aside class="share" aria-label="Share this page" data-url="https://doodlepoker.com/privacy.html">
@@ -220,7 +221,7 @@
 <script>(function(){var b=document.querySelector('.share');if(!b)return;var u=location.href.split('#')[0],t=document.title;b.querySelectorAll('a[data-to]').forEach(function(a){a.href=a.getAttribute('data-to').replace('{u}',encodeURIComponent(u)).replace('{t}',encodeURIComponent(t));});var said=b.querySelector('.share-said');b.querySelector('[data-copy]').onclick=function(){var done=function(){said.textContent='Link copied';};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done,function(){prompt('Copy this link',u);});}else{prompt('Copy this link',u);}};var n=b.querySelector('[data-native]');if(navigator.share){n.hidden=false;n.onclick=function(){navigator.share({title:t,url:u}).catch(function(){});};}})();</script>
 <footer>
   <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
-  <p>Doodle Poker · coming soon · <a href="mailto:hello@doodlepoker.com">hello@doodlepoker.com</a></p>
+  <p>Doodle Poker · coming soon · <a href="contact/">Contact</a></p>
 </footer>
 </body>
 </html>

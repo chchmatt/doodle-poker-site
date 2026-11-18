@@ -1,4 +1,5 @@
 
+  [hidden] { display: none !important; }
   .share { max-width: 960px; margin: 28px auto 8px; padding: 0 16px; text-align: center; }
   .share p { margin: 0 0 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; }
   .share ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }

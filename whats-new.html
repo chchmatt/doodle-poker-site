@@ -23,6 +23,7 @@
 <meta name="twitter:image" content="https://doodlepoker.com/img/og.png">
 <link rel="canonical" href="https://doodlepoker.com/whats-new.html">
 <style>
+  [hidden] { display: none !important; }
   .share { max-width: 960px; margin: 28px auto 8px; padding: 0 16px; text-align: center; }
   .share p { margin: 0 0 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; }
   .share ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -165,7 +166,7 @@
 <script>(function(){var b=document.querySelector('.share');if(!b)return;var u=location.href.split('#')[0],t=document.title;b.querySelectorAll('a[data-to]').forEach(function(a){a.href=a.getAttribute('data-to').replace('{u}',encodeURIComponent(u)).replace('{t}',encodeURIComponent(t));});var said=b.querySelector('.share-said');b.querySelector('[data-copy]').onclick=function(){var done=function(){said.textContent='Link copied';};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done,function(){prompt('Copy this link',u);});}else{prompt('Copy this link',u);}};var n=b.querySelector('[data-native]');if(navigator.share){n.hidden=false;n.onclick=function(){navigator.share({title:t,url:u}).catch(function(){});};}})();</script>
 <footer>
   <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
-  <p>Doodle Poker · coming soon · <a href="mailto:hello@doodlepoker.com">hello@doodlepoker.com</a></p>
+  <p>Doodle Poker · coming soon · <a href="contact/">Contact</a></p>
 </footer>
 </body>
 </html>

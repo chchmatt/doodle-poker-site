@@ -231,7 +231,6 @@
   }
 
   var BLOB = 'https://doodlepokerhands.blob.core.windows.net'; // (where a published hand and its picture live: hands/<id>.json, images/<id>.jpg)
-  var SUPPORT = 'support@doodlepoker.com';
 
   /** Where a hand's file is: the cloud's storage for an id the cloud made (22 letters and digits), or this site's own for the sample hands (sample-43). Null for anything else. */
   function sourceOf(id) {
@@ -245,7 +244,7 @@
     var title = document.querySelector('.hv-title');
     if (title && h.hero.cards.length === 2) title.innerHTML = h.hero.cards.map(function (c) { return card(c, 'md'); }).join('');
     if (h.doodle && /^[0-9A-Za-z]{22}\.jpg$/.test(h.doodle)) el.insertAdjacentHTML('afterbegin', '<img class="hv-doodle" src="' + BLOB + '/images/' + h.doodle + '" alt="The table, as it was doodled" width="560" loading="lazy">');
-    el.insertAdjacentHTML('beforeend', '<p class="center hv-report"><a href="mailto:' + SUPPORT + '?subject=' + encodeURIComponent('Report a hand') + '&body=' + encodeURIComponent('Hand id: ' + id + '\nWhat is wrong with it: ') + '">Report this hand</a></p>');
+    el.insertAdjacentHTML('beforeend', '<p class="center hv-report"><a href="/contact/?report=' + encodeURIComponent(id) + '&page=' + encodeURIComponent(location.href.split('#')[0]) + '">Report this hand</a></p>');
   }
 
   function start() {
