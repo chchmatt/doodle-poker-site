@@ -1,4 +1,11 @@
 
+  .share { max-width: 960px; margin: 28px auto 8px; padding: 0 16px; text-align: center; }
+  .share p { margin: 0 0 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; }
+  .share ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .share a, .share button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); color: var(--ink); cursor: pointer; }
+  .share a:hover, .share button:hover, .share a:focus-visible, .share button:focus-visible { background: var(--teal-btn); }
+  .share svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .share [hidden] { display: none; }
   @font-face { font-family: "Permanent Marker"; src: url("../fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
   @font-face { font-family: "Saira Stencil One"; src: url("../fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
   /* (dark, like the app: its page, card and writing colours from src/theme.ts; the hand-drawn pictures keep their paper) */
