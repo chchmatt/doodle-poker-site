@@ -12,13 +12,13 @@
   }
 
   function labelOf(h, seat) {
-    for (var i = 0; i < h.seats.length; i++) if (h.seats[i].seat === seat) return h.seats[i].label;
+    for (var i = 0; i < h.seats.length; i++) if (h.seats[i].seat === seat) return h.seats[i].label || h.seats[i].position || ('Seat ' + seat);
     return '?';
   }
 
   /** Is this a published hand the viewer can show? */
   function usable(h) {
-    if (!h || (h.v !== 1 && h.v !== 2) || !Array.isArray(h.seats) || h.seats.length < 2 || !h.hero || !Array.isArray(h.streets)) return false;
+    if (!h || (h.v !== 1 && h.v !== 2 && h.v !== 3) || !Array.isArray(h.seats) || h.seats.length < 2 || !h.hero || !Array.isArray(h.streets)) return false;
     return h.seats.some(function (s) {
       return s.seat === h.hero.seat;
     });
@@ -161,13 +161,18 @@
     h.seats.forEach(function (s, i) {
       if (s.seat === h.hero.seat) heroIndex = i;
     });
+    var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     var date = new Date(h.playedAt);
+    var w = h.when ? /^(\d{4})-(\d{2})(?:-(\d{2})(?:T(\d{2}:\d{2}))?)?$/.exec(h.when) : null;
     var when = isNaN(date) ? '' : date.getUTCDate() + ' ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][date.getUTCMonth()] + ' ' + date.getUTCFullYear();
     var stakes = h.currency + h.stakes.sb + '/' + h.currency + h.stakes.bb + (h.code ? ' ' + h.code : '');
     document.title = cardsText(h.hero.cards) + ' — ' + stakes + ', pot ' + money(h, h.pot) + ' | Doodle Poker';
     var meta = ["No Limit Hold’em", stakes, h.max + '-max'];
-    if (when) meta.push(when);
+    if (w) meta.push(w[3] ? Number(w[3]) + ' ' + MONTHS[Number(w[2]) - 1] + ' ' + w[1] + (w[4] ? ' ' + w[4] : '') : MONTHS[Number(w[2]) - 1] + ' ' + w[1]);
+    else if (when) meta.push(when);
     if (h.number) meta.push('Hand #' + h.number);
+    if (h.place) meta.push(h.place);
+    if (h.tableName) meta.push('Table ' + h.tableName);
     el.innerHTML =
       '<p class="hv-meta">' + esc(meta.join(' · ')) + '</p>' +
       '<div class="hv-table" id="hv-table"></div>' +
