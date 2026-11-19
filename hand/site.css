@@ -30,6 +30,7 @@
   main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
   .card { background: var(--paper); border: 3px solid var(--edge); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
   .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .card:has(#hand) { overflow: hidden; }
   @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
   h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
   h1 { font-size: 2.3rem; line-height: 1.15; margin: 0.1em 0 0.3em; }
