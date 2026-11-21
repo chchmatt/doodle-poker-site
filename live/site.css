@@ -38,8 +38,9 @@
   h3 { font-size: 1.2rem; margin: 1.2em 0 0.2em; }
   .card > h2:first-child, .card > h1:first-child { margin-top: 0; }
   p { margin: 0.6em 0; }
-  a { color: var(--teal-dark); }
-  a:hover { color: var(--orange); }
+  /* Links are not underlined: a link in a sentence is told from the writing by its colour (teal on the dark page, well over 3:1 against the ink) AND by its weight (bold), so colour is never the only sign; it is underlined when pointed at or reached by the keyboard. */
+  a { color: var(--teal-dark); text-decoration: none; font-weight: 700; }
+  a:hover, a:focus-visible { color: var(--orange); text-decoration: underline; }
   :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
   ul, ol { padding-left: 1.3em; margin: 0.6em 0; }
   li { margin: 0.3em 0; }
