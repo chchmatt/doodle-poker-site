@@ -55,6 +55,8 @@
   h1 { font: 400 30px/1.1 var(--hand); margin: 0; letter-spacing: 0.01em; }
   #fresh { color: var(--pencil); font-size: 14px; }
   #fresh.stale { color: var(--redpen); font-weight: 600; }
+  #watcher { color: var(--pencil); font-size: 14px; flex-basis: 100%; margin: 0; }
+  #watcher.stale { color: var(--redpen); font-weight: 600; }
   .notice {
     margin: 16px 0 0; padding: 10px 14px; font-size: 14px;
     border: 2px dashed var(--pencil); border-radius: var(--wobble-small); color: var(--pencil);
@@ -89,6 +91,9 @@
     transition: width 0.6s ease;
   }
   .bar.done > i { background: repeating-linear-gradient(-58deg, var(--felt) 0 5px, transparent 5px 9px); }
+  .bar-end { text-align: right; margin-top: 4px; font-size: 14px; color: var(--pencil); }
+  .bar-end strong { color: var(--ink); font-weight: 600; }
+
   .bar-words { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 14px; color: var(--pencil); flex-wrap: wrap; }
   .bar-words strong { color: var(--ink); font-weight: 600; }
   ol.steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
@@ -117,7 +122,7 @@
     font-size: 13px; font-weight: 600; padding: 1px 10px; white-space: nowrap;
     border: 2px solid currentColor; border-radius: var(--wobble-small); color: var(--pencil);
   }
-  ul.items li.done .title { color: var(--pencil); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  ul.items li.done .title { color: var(--pencil); }
   ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
   ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
   ul.items li.working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
@@ -125,9 +130,6 @@
   ul.items li.working .title { font-weight: 600; }
   ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
   ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
-  ul.log { list-style: none; margin: 12px 0 0; padding: 0; font-size: 15px; }
-  ul.log li { display: grid; grid-template-columns: 3.6em 1fr; gap: 10px; padding: 3px 0; }
-  ul.log time { color: var(--pencil); font-variant-numeric: tabular-nums; }
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
   @media (max-width: 520px) {
     .now-num { font-size: 44px; }
@@ -159,7 +161,7 @@
   @media (prefers-reduced-motion: reduce) { .bar > i, ul.tasks .tbar > i { transition: none; } }
   @media (prefers-reduced-motion: no-preference) { ul.tasks .tbar > i { transition: width 0.9s linear; } }
   .counts { margin: 12px 0 0; font-size: 15px; }
-  ul.items.finished li .title { color: var(--pencil); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  ul.items.finished li .title { color: var(--pencil); }
 </style>
 </head>
 <body>
@@ -173,6 +175,7 @@
   var STORE = 'https://doodlepokerhands.blob.core.windows.net/build/';
   var CHECK_EVERY = 10000;               // how often the page looks at the file again, while it is in front
   var CHECK_DONE = 60000;                // ...and when everything is done: nothing is expected
+  var WATCHER_QUIET_AFTER = 3 * 60 * 1000; // a build is going and the watcher has not looked for this long: the page may be out of date
   var QUIET_AFTER = 15 * 60 * 1000;      // no update for this long past the running step's estimate: the builder may have stopped
   var CAP = 0.95;                        // a step that is not done never shows more than this
 
@@ -181,10 +184,12 @@
   <header>
     <h1>Doodle Poker build</h1>
     <span id="fresh" role="status"></span>
+    <span id="watcher" role="status" hidden></span>
   </header>
 
   <p id="failed" class="notice warn" hidden></p>
   <p id="stale" class="notice warn" hidden></p>
+  <p id="paused" class="notice warn" hidden></p>
 
   <section id="now" aria-live="polite">
     <div class="now-head">
@@ -193,6 +198,7 @@
     </div>
     <p class="now-doing" id="now-doing"></p>
     <div class="bar" id="now-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+    <div class="bar-end" id="now-end" hidden></div>
     <div class="bar-words">
       <span id="now-pct"></span>
       <span id="now-time"></span>
@@ -211,9 +217,6 @@
   <div class="list-count" id="list-count"></div>
   <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
   <ul class="items" id="items"></ul>
-
-  <h2>Lately</h2>
-  <ul class="log" id="log"></ul>
 
   <section id="done-part" hidden>
     <h2>Done</h2>
@@ -298,6 +301,63 @@
     return nowMs - new Date(t.startedAt).getTime() > t.estimateSec * 1000 * (1 + 1 / 3);
   }
 
+  /* ---------- the estimated finish of the item in play (a pure function: the time now plus the time still to run, over the tasks not done) ---------- */
+
+  /* finishTime:start */
+  function finishTime(tasks, nowMs) {
+    var leaves = [];
+    (function collect(list) {
+      (list || []).forEach(function (t) {
+        if (t && t.subtasks && t.subtasks.length) collect(t.subtasks); // (a task with subtasks counts by its subtasks, as the bars do)
+        else if (t) leaves.push(t);
+      });
+    })(tasks);
+    var known = leaves.filter(function (t) { return t.estimateSec > 0; });
+    if (!known.length) return null; // (no estimates at all: no time is shown)
+    var avg = known.reduce(function (s, t) { return s + t.estimateSec * 1000; }, 0) / known.length; // (a task with no estimate counts the average of the others)
+    var remaining = 0;
+    var later = false;
+    leaves.forEach(function (t) {
+      if (t.state === 'done') return;
+      var est = t.estimateSec > 0 ? t.estimateSec * 1000 : avg;
+      if (t.state === 'on' && t.startedAt) {
+        var elapsed = nowMs - new Date(t.startedAt).getTime();
+        if (elapsed > est) later = true;
+        remaining += Math.max(est - elapsed, est * 0.2); // (over its estimate it still counts a small floor, so the time keeps moving later)
+      } else remaining += est;
+    });
+    if (remaining <= 0) return null;
+    return { ms: nowMs + remaining, later: later };
+  }
+  /* finishTime:end */
+
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function finishWords(f, nowMs) {
+    var d = new Date(f.ms);
+    var day = d.getDate() !== new Date(nowMs).getDate() ? DAYS[d.getDay()] + ' ' : '';
+    return [f.later ? 'later than guessed, now about ' : 'done about ', day + clock(d.toISOString())];
+  }
+
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  /* A time of day, with the weekday and date before it when it was not today (in the viewer's own time zone). */
+  function stamp(iso, nowMs) {
+    var d = new Date(iso);
+    var today = new Date(nowMs);
+    var same = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+    return (same ? '' : DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ', ') + clock(iso);
+  }
+  /* finishedWords:start */
+  /* What a finished item's line says: when it started and how long it took; only the time that is known; and never a negative or a blank duration (a finish before the start shows the start only). */
+  function doneWords(i, nowMs) {
+    var s = i.startedAt ? new Date(i.startedAt).getTime() : NaN;
+    var f = i.finishedAt ? new Date(i.finishedAt).getTime() : NaN;
+    if (!isNaN(s) && !isNaN(f) && f >= s) return 'Started ' + stamp(i.startedAt, nowMs) + ', took ' + span(f - s);
+    if (!isNaN(s)) return 'Started ' + stamp(i.startedAt, nowMs);
+    if (!isNaN(f)) return 'Finished ' + stamp(i.finishedAt, nowMs);
+    return '';
+  }
+  /* finishedWords:end */
+
   /* ---------- drawing ---------- */
 
   function setBar(bar, pct, done) {
@@ -338,7 +398,12 @@
     asking.hidden = !data.asking;
     asking.textContent = data.asking ? 'The builder is waiting for you: ' + data.asking : '';
 
-    var items = data.items || [];
+    // (an item number that is in the list twice counts once, the LAST entry winning, kept where it first appeared: a later done beats an earlier waiting)
+    var lastOf = {};
+    (data.items || []).forEach(function (i) { if (i) lastOf[i.number] = i; });
+    var seenNo = {};
+    var items = [];
+    (data.items || []).forEach(function (i) { if (i && !seenNo[i.number]) { seenNo[i.number] = true; items.push(lastOf[i.number]); } });
     var doneItems = items.filter(isFinished);
     var open = items.filter(function (i) { return !isFinished(i); });
     var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
@@ -351,6 +416,7 @@
       setBar($('now-bar'), 100, true);
       $('now-pct').textContent = '';
       $('now-time').textContent = data.finishedAt ? 'Finished ' + clock(data.finishedAt) : '';
+      $('now-end').hidden = true;
       var counts = $('counts');
       counts.hidden = false;
       counts.textContent = (doneItems.length - part) + ' done, ' + part + ' done in part, ' + blocked + ' blocked' + (data.finishedAt ? ', at ' + clock(data.finishedAt) : '') + '.';
@@ -369,11 +435,25 @@
         var sum = 0;
         tasks.forEach(function (t, i) { sum += steady('t' + i + '|' + (t.startedAt || ''), fake(t, nowMs)); });
         pct = tasks.length ? (sum / tasks.length) * 100 : 0;
-      } else pct = Math.max(0, Math.min(100, Math.round(now.percent || 0)));
-      pct = steady('now|' + now.number, pct / 100) * 100;
-      setBar($('now-bar'), pct, false);
+      } else if (typeof now.percent === 'number') pct = Math.max(0, Math.min(100, Math.round(now.percent)));
+      else if (tasks.length) pct = (tasks.reduce(function (s, t, i) { return s + steady('t' + i + '|' + (t.startedAt || ''), fake(t, nowMs)); }, 0) / tasks.length) * 100;
+      else pct = null; // (neither a percentage nor tasks: the bar stays empty and no percentage is shown)
+      if (pct !== null) pct = steady('now|' + now.number, pct / 100) * 100;
+      // (the guessed finish: only while the item is in play, not when it is Done, Blocked or waiting for the player)
+      var mine = lastOf[now.number];
+      var inPlay = !mine || mine.state === 'working';
+      var fin = inPlay ? finishTime(tasks, nowMs) : null;
+      var endEl = $('now-end');
+      endEl.hidden = !fin;
+      endEl.classList.toggle('late', !!(fin && fin.later));
+      if (fin) {
+        var fw = finishWords(fin, nowMs);
+        endEl.replaceChildren(document.createTextNode(fw[0]), el('strong', null, fw[1]));
+      }
+      setBar($('now-bar'), pct === null ? 0 : pct, false);
       var p = $('now-pct');
-      p.replaceChildren(el('strong', null, 'About ' + (has ? '~' : '') + Math.round(pct) + '%'), document.createTextNode(' of this item, a best guess'));
+      if (pct === null) p.replaceChildren();
+      else p.replaceChildren(el('strong', null, 'About ' + (has ? '~' : '') + Math.round(pct) + '%'), document.createTextNode(' of this item, a best guess'));
       var ul = $('tasks');
       ul.replaceChildren();
       tasks.forEach(function (t, i) { ul.append(taskNode(t, 't' + i, nowMs, false)); });
@@ -391,7 +471,8 @@
     });
 
     // the count and the bar count ALL items (the finished ones too), so the progress never seems to go backwards
-    var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
+    // (the number is the length of the Needs you list when there is one, so the two always agree; otherwise the items marked needs-you)
+    var needs = Array.isArray(data.needsYou) && data.needsYou.length ? data.needsYou.length : items.filter(function (i) { return i.state === 'needs-you'; }).length;
     var words = doneItems.length + ' of ' + items.length + ' done';
     if (blocked) words += ', ' + blocked + ' blocked';
     if (needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
@@ -412,15 +493,7 @@
       ul2.append(li);
     });
 
-    var log = $('log');
-    log.replaceChildren();
-    (data.log || []).slice(0, 12).forEach(function (l) {
-      var li = el('li');
-      li.append(el('time', null, clock(l.at)), el('span', null, l.text));
-      log.append(li);
-    });
-
-    // the finished items, crossed off, newest first, with how long each took
+    // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
     $('done-part').hidden = doneItems.length === 0;
     var dl = $('done-items');
     dl.replaceChildren();
@@ -428,9 +501,7 @@
       var st = STATES[i.state] || STATES.done;
       var li = el('li', st.cls);
       var title = el('span', 'title', i.title);
-      var when = '';
-      if (i.finishedAt && i.startedAt) when = 'Finished ' + clock(i.finishedAt) + ', took ' + span(new Date(i.finishedAt) - new Date(i.startedAt));
-      else if (i.finishedAt) when = 'Finished ' + clock(i.finishedAt);
+      var when = doneWords(i, nowMs);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
       if (when) title.append(el('span', 'when', when));
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
@@ -446,7 +517,24 @@
     var nowMs = Date.now();
     var age = nowMs - new Date(data.updatedAt).getTime();
     var finished = data.state === 'finished' || !data.now;
-    $('fresh').textContent = 'Updated ' + span(age) + ' ago';
+    // the runner says the Claude usage limit stopped the run (item 81): one line, never any log text
+    var pz = $('paused');
+    if (data.paused && data.paused.at) {
+      pz.hidden = false;
+      pz.textContent = 'Paused: the Claude usage limit was reached. ' + (data.paused.until ? 'Trying again at ' + clock(data.paused.until) + '.' : 'Trying again soon.');
+    } else pz.hidden = true;
+    $('fresh').textContent = 'Progress changed ' + span(age) + ' ago';
+    // the watcher's own note (item 80): the time it last looked at the builder's file, written into the file it uploads while a build is going; with no note nothing is said about it
+    var checked = data.watcherCheckedAt ? new Date(data.watcherCheckedAt).getTime() : NaN;
+    var wl = $('watcher');
+    if (data.state !== 'working' || isNaN(checked)) wl.hidden = true;
+    else {
+      var wage = Math.max(0, nowMs - checked);
+      var deadWatcher = wage > WATCHER_QUIET_AFTER;
+      wl.hidden = false;
+      wl.classList.toggle('stale', deadWatcher);
+      wl.textContent = deadWatcher ? 'The watcher has not checked for ' + span(wage) + ': this page may be out of date.' : 'Watcher checked ' + span(wage) + ' ago';
+    }
     var running = null;
     if (!finished) (data.now.tasks || data.now.steps || []).forEach(function (t) { if (t.state === 'on') running = t; });
     var allowed = QUIET_AFTER + (running && running.estimateSec ? running.estimateSec * 1000 : 0);
@@ -498,7 +586,7 @@
         build();
         $('page').hidden = false;
         $('failed').hidden = true;
-        if (!data || data.updatedAt !== j.updatedAt) { data = j; draw(); }
+        if (!data || data.updatedAt !== j.updatedAt || data.watcherCheckedAt !== j.watcherCheckedAt) { data = j; draw(); }
         schedule(); // (how often to look again depends on whether everything is done)
       })
       .catch(function () {
