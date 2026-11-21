@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doodle Poker build</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  :root {
+    --paper: #eef2f6;
+    --grid: #dbe3ec;
+    --card: #fbfcfd;
+    --ink: #1b2a41;
+    --pencil: #5d6b7c;
+    --felt: #1f7a4d;
+    --marker: #e8730c;
+    --redpen: #c0392b;
+    --rule: #1b2a41;
+    --hand: "Ink Free", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+    --body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --wobble: 255px 14px 225px 14px / 14px 225px 14px 255px;
+    --wobble-small: 120px 10px 110px 10px / 10px 110px 10px 120px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17222c;
+      --grid: #1f2d39;
+      --card: #1c2a36;
+      --ink: #e8eef3;
+      --pencil: #9aa9b8;
+      --felt: #4fc48a;
+      --marker: #ff9a3d;
+      --redpen: #ff7b6b;
+      --rule: #e8eef3;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font: 16px/1.5 var(--body);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    min-height: 100vh;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font: 700 30px/1.1 var(--hand); margin: 0; letter-spacing: 0.01em; }
+  #fresh { color: var(--pencil); font-size: 14px; }
+  #fresh.stale { color: var(--redpen); font-weight: 600; }
+
+  .notice {
+    margin: 16px 0 0; padding: 10px 14px; font-size: 14px;
+    border: 2px dashed var(--pencil); border-radius: var(--wobble-small); color: var(--pencil);
+  }
+  .notice.warn { border-color: var(--redpen); color: var(--redpen); }
+  [hidden] { display: none !important; }
+
+  /* The item in play */
+  #now {
+    margin-top: 22px; padding: 22px 24px 20px;
+    background: var(--card);
+    border: 2.5px solid var(--rule);
+    border-radius: var(--wobble);
+    box-shadow: 5px 6px 0 var(--rule);
+  }
+  .now-head { display: flex; gap: 16px; align-items: flex-start; }
+  .now-num {
+    font: 700 56px/0.9 var(--hand); color: var(--marker);
+    min-width: 1.2em; text-align: center;
+  }
+  .now-title { font: 700 23px/1.25 var(--hand); margin: 4px 0 0; }
+  .now-doing { margin: 14px 0 0; font-size: 17px; }
+  .now-doing b { font-weight: 600; }
+
+  .bar {
+    position: relative; height: 30px; margin-top: 14px;
+    border: 2.5px solid var(--rule); border-radius: var(--wobble-small);
+    overflow: hidden; background: transparent;
+  }
+  .bar > i {
+    display: block; height: 100%; width: 0;
+    background:
+      repeating-linear-gradient(-58deg, var(--marker) 0 5px, transparent 5px 9px);
+    border-right: 2.5px solid var(--rule);
+    transition: width 0.6s ease;
+  }
+  .bar.done > i { background: repeating-linear-gradient(-58deg, var(--felt) 0 5px, transparent 5px 9px); }
+  .bar-words { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 14px; color: var(--pencil); flex-wrap: wrap; }
+  .bar-words strong { color: var(--ink); font-weight: 600; }
+
+  ol.steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
+  ol.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: baseline; color: var(--pencil); }
+  ol.steps li .mark { font: 700 16px/1 var(--hand); text-align: center; }
+  ol.steps li.done { color: var(--ink); }
+  ol.steps li.done .mark { color: var(--felt); }
+  ol.steps li.on { color: var(--ink); font-weight: 600; }
+  ol.steps li.on .mark { color: var(--marker); }
+  @media (prefers-reduced-motion: no-preference) {
+    ol.steps li.on .mark { animation: nudge 1.4s ease-in-out infinite; }
+    @keyframes nudge { 50% { transform: translateX(3px); } }
+  }
+
+  /* The list */
+  h2 { font: 700 21px/1.2 var(--hand); margin: 36px 0 0; }
+  .list-count { color: var(--pencil); font-size: 14px; margin-top: 2px; }
+  .bar.thin { height: 16px; margin-top: 8px; }
+
+  ul.items { list-style: none; margin: 14px 0 0; padding: 0; }
+  ul.items li {
+    display: grid; grid-template-columns: 2.4em 1fr auto; gap: 10px; align-items: baseline;
+    padding: 8px 2px; border-bottom: 1.5px dashed var(--grid);
+  }
+  ul.items .num { font: 700 18px/1.2 var(--hand); text-align: right; color: var(--pencil); }
+  ul.items .title { min-width: 0; }
+  ul.items .when { display: block; font-size: 13px; color: var(--pencil); }
+  ul.items .chip {
+    font-size: 13px; font-weight: 600; padding: 1px 10px; white-space: nowrap;
+    border: 2px solid currentColor; border-radius: var(--wobble-small); color: var(--pencil);
+  }
+  ul.items li.done .title { color: var(--pencil); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
+  ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
+  ul.items li.working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
+  ul.items li.working .chip, ul.items li.working .num { color: var(--marker); }
+  ul.items li.working .title { font-weight: 600; }
+  ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
+  ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
+
+  /* Lately */
+  ul.log { list-style: none; margin: 12px 0 0; padding: 0; font-size: 15px; }
+  ul.log li { display: grid; grid-template-columns: 3.6em 1fr; gap: 10px; padding: 3px 0; }
+  ul.log time { color: var(--pencil); font-variant-numeric: tabular-nums; }
+
+  footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
+
+  @media (max-width: 520px) {
+    .now-num { font-size: 44px; }
+    .now-title { font-size: 20px; }
+    ul.items li { grid-template-columns: 2em 1fr; }
+    ul.items .chip { grid-column: 2; justify-self: start; }
+  }
+  .asking { margin: 16px 0 0; padding: 12px 16px; font: 700 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
+  .needs-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  .needs-list li { display: grid; grid-template-columns: 2.4em 1fr; gap: 2px 10px; padding: 8px 2px; border-bottom: 1.5px dashed var(--grid); }
+  .needs-list .num { font: 700 18px/1.2 var(--hand); text-align: right; color: var(--marker); grid-row: span 2; }
+  .needs-list .what { grid-column: 2; font-size: 14px; color: var(--pencil); }
+</style>
+</head>
+<body>
+<main>
+  <p id="needlink" class="notice" hidden>This page needs its whole link, the part after the # as well.</p>
+<div id="page">
+  <p id="asking" class="asking" hidden></p>
+  <header>
+    <h1>Doodle Poker build</h1>
+    <span id="fresh" role="status"></span>
+  </header>
+
+  <p id="failed" class="notice warn" hidden></p>
+  <p id="stale" class="notice warn" hidden></p>
+
+  <section id="now" aria-live="polite">
+    <div class="now-head">
+      <div class="now-num" id="now-num"></div>
+      <p class="now-title" id="now-title"></p>
+    </div>
+    <p class="now-doing" id="now-doing"></p>
+    <div class="bar" id="now-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+    <div class="bar-words">
+      <span id="now-pct"></span>
+      <span id="now-time"></span>
+    </div>
+    <ol class="steps" id="now-steps"></ol>
+  </section>
+
+  <section id="needs" hidden>
+    <h2>Needs you</h2>
+    <ul class="needs-list" id="needs-list"></ul>
+  </section>
+
+  <h2>The list</h2>
+  <div class="list-count" id="list-count"></div>
+  <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+  <ul class="items" id="items"></ul>
+
+  <h2>Lately</h2>
+  <ul class="log" id="log"></ul>
+
+  <footer id="foot">This page reads one small file every 10 seconds while it is in front. Leave it open.</footer>
+</div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // The data is one small JSON file in the store that holds the published hands. Its name is the part of the link after the # (a browser never sends that to a server), so the page itself holds no name.
+  var STORE = 'https://doodlepokerhands.blob.core.windows.net/build/';
+  var CHECK_EVERY = 10000;               // how often the page looks at the file again, while it is in front
+  var STALE_AFTER = 15 * 60 * 1000;      // no update for this long while an item is in play: say so
+
+  var data = null;
+  var failed = false;
+  var name = location.hash.replace(/^#/, '');
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  var clock = function (iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  };
+  var span = function (ms) {
+    var s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return s + ' s';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60);
+    return h + ' h ' + (m % 60) + ' min';
+  };
+
+  var STATES = {
+    'done':     { cls: 'done',    chip: 'Done' },
+    'part':     { cls: 'part',    chip: 'Done in part' },
+    'blocked':  { cls: 'blocked', chip: 'Blocked' },
+    'working':  { cls: 'working', chip: 'Working' },
+    'waiting':  { cls: 'waiting', chip: 'Waiting' },
+    'needs-you':{ cls: 'needs',   chip: 'Needs you' }
+  };
+
+  /* ---------- drawing ---------- */
+
+  function draw() {
+    if (!data) return;
+    var now = data.now;
+    var finished = data.state === 'finished';
+
+    var asking = $('asking');
+    asking.hidden = !data.asking;
+    asking.textContent = data.asking ? 'The builder is waiting for you: ' + data.asking : '';
+
+    if (finished || !now) {
+      $('now-num').textContent = '✓';
+      $('now-title').textContent = 'Finished the list';
+      $('now-doing').textContent = data.summary || 'Nothing is being built.';
+      setBar($('now-bar'), 100, true);
+      $('now-pct').textContent = '';
+      $('now-steps').replaceChildren();
+    } else {
+      $('now-num').textContent = now.number;
+      $('now-title').textContent = now.title;
+      var doing = $('now-doing');
+      doing.replaceChildren(el('b', null, 'Now: '), document.createTextNode(now.doing || ''));
+      var pct = Math.max(0, Math.min(100, Math.round(now.percent || 0)));
+      setBar($('now-bar'), pct, false);
+      var p = $('now-pct');
+      p.replaceChildren(el('strong', null, 'About ' + pct + '%'), document.createTextNode(' of this item, a best guess'));
+      var steps = $('now-steps');
+      steps.replaceChildren();
+      (now.steps || []).forEach(function (s) {
+        var li = el('li', s.state === 'done' ? 'done' : s.state === 'on' ? 'on' : '');
+        li.append(el('span', 'mark', s.state === 'done' ? '✓' : s.state === 'on' ? '➜' : '·'), el('span', null, s.label));
+        steps.append(li);
+      });
+    }
+
+    // what is waiting for the player
+    var needsYou = data.needsYou || [];
+    $('needs').hidden = needsYou.length === 0;
+    var nl = $('needs-list');
+    nl.replaceChildren();
+    needsYou.forEach(function (n) {
+      var li = el('li');
+      li.append(el('span', 'num', n.number), el('span', 'title', n.title), el('span', 'what', n.needs));
+      nl.append(li);
+    });
+
+    var items = data.items || [];
+    var doneCount = items.filter(function (i) { return i.state === 'done' || i.state === 'part'; }).length;
+    var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
+    var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
+    var words = doneCount + ' of ' + items.length + ' done';
+    if (blocked) words += ', ' + blocked + ' blocked';
+    if (needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
+    $('list-count').textContent = words;
+    setBar($('list-bar'), items.length ? (doneCount / items.length) * 100 : 0, true);
+
+    var ul = $('items');
+    ul.replaceChildren();
+    items.forEach(function (i) {
+      var st = STATES[i.state] || STATES.waiting;
+      var li = el('li', st.cls);
+      var title = el('span', 'title', i.title);
+      var when = '';
+      if (i.finishedAt && i.startedAt) when = 'Finished ' + clock(i.finishedAt) + ', took ' + span(new Date(i.finishedAt) - new Date(i.startedAt));
+      else if (i.finishedAt) when = 'Finished ' + clock(i.finishedAt);
+      else if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
+      if (i.note) when = when ? when + '. ' + i.note : i.note;
+      if (when) title.append(el('span', 'when', when));
+      li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
+      ul.append(li);
+    });
+
+    var log = $('log');
+    log.replaceChildren();
+    (data.log || []).slice(0, 12).forEach(function (l) {
+      var li = el('li');
+      var t = el('time', null, clock(l.at));
+      li.append(t, el('span', null, l.text));
+      log.append(li);
+    });
+
+    tick();
+  }
+
+  function setBar(bar, pct, done) {
+    bar.classList.toggle('done', !!done);
+    bar.firstElementChild.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', Math.round(pct));
+  }
+
+  /* The parts that move with the clock, once a second. */
+  function tick() {
+    if (!data) return;
+    var age = Date.now() - new Date(data.updatedAt).getTime();
+    var fresh = $('fresh');
+    var working = data.state !== 'finished' && data.now;
+    var stale = working && age > STALE_AFTER;
+    fresh.textContent = 'Updated ' + span(age) + ' ago';
+    fresh.classList.toggle('stale', !!stale);
+    var warn = $('stale');
+    warn.hidden = !stale;
+    if (stale) warn.textContent = 'No update for ' + span(age) + '. The builder may have stopped: look at VS Code.';
+    if (working && data.now.startedAt) {
+      $('now-time').textContent = 'Started ' + clock(data.now.startedAt) + ', ' + span(Date.now() - new Date(data.now.startedAt)) + ' so far';
+    } else {
+      $('now-time').textContent = '';
+    }
+  }
+
+  /* ---------- reading the file ---------- */
+
+  function load() {
+    if (document.hidden) return;
+    fetch(STORE + name + '.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+      .then(function (j) {
+        failed = false;
+        $('failed').hidden = true;
+        if (!data || data.updatedAt !== j.updatedAt) { data = j; draw(); }
+      })
+      .catch(function () {
+        failed = true;
+        var f = $('failed');
+        f.hidden = false;
+        f.textContent = data ? 'The page could not read the file just now. It is showing what it last had.' : 'The page could not read the file. Check the link, or try again in a moment.';
+      });
+  }
+
+  // Without its whole link the page shows nothing but a line saying so.
+  if (!/^[a-z0-9]{24,}$/.test(name)) {
+    $('page').hidden = true;
+    $('needlink').hidden = false;
+    return;
+  }
+  $('needlink').hidden = true;
+  load();
+  setInterval(load, CHECK_EVERY);
+  setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>
