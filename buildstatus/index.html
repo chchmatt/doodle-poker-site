@@ -3,10 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Doodle Poker build</title>
+<title>Doodle Poker</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="../favicon.png">
+<link rel="apple-touch-icon" href="../icon.png">
 <style>
+  @font-face { font-family: "Permanent Marker"; src: url("PermanentMarker-Latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
   :root {
     --paper: #eef2f6;
     --grid: #dbe3ec;
@@ -17,7 +20,7 @@
     --marker: #e8730c;
     --redpen: #c0392b;
     --rule: #1b2a41;
-    --hand: "Ink Free", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+    --hand: "Permanent Marker", "Ink Free", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
     --body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
     --wobble: 255px 14px 225px 14px / 14px 225px 14px 255px;
     --wobble-small: 120px 10px 110px 10px / 10px 110px 10px 120px;
@@ -48,20 +51,16 @@
     min-height: 100vh;
   }
   main { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
-
   header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  h1 { font: 700 30px/1.1 var(--hand); margin: 0; letter-spacing: 0.01em; }
+  h1 { font: 400 30px/1.1 var(--hand); margin: 0; letter-spacing: 0.01em; }
   #fresh { color: var(--pencil); font-size: 14px; }
   #fresh.stale { color: var(--redpen); font-weight: 600; }
-
   .notice {
     margin: 16px 0 0; padding: 10px 14px; font-size: 14px;
     border: 2px dashed var(--pencil); border-radius: var(--wobble-small); color: var(--pencil);
   }
   .notice.warn { border-color: var(--redpen); color: var(--redpen); }
   [hidden] { display: none !important; }
-
-  /* The item in play */
   #now {
     margin-top: 22px; padding: 22px 24px 20px;
     background: var(--card);
@@ -71,13 +70,12 @@
   }
   .now-head { display: flex; gap: 16px; align-items: flex-start; }
   .now-num {
-    font: 700 56px/0.9 var(--hand); color: var(--marker);
+    font: 400 56px/0.9 var(--hand); color: var(--marker);
     min-width: 1.2em; text-align: center;
   }
-  .now-title { font: 700 23px/1.25 var(--hand); margin: 4px 0 0; }
+  .now-title { font: 400 23px/1.25 var(--hand); margin: 4px 0 0; }
   .now-doing { margin: 14px 0 0; font-size: 17px; }
   .now-doing b { font-weight: 600; }
-
   .bar {
     position: relative; height: 30px; margin-top: 14px;
     border: 2.5px solid var(--rule); border-radius: var(--wobble-small);
@@ -93,10 +91,9 @@
   .bar.done > i { background: repeating-linear-gradient(-58deg, var(--felt) 0 5px, transparent 5px 9px); }
   .bar-words { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 14px; color: var(--pencil); flex-wrap: wrap; }
   .bar-words strong { color: var(--ink); font-weight: 600; }
-
   ol.steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; font-size: 15px; }
   ol.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: baseline; color: var(--pencil); }
-  ol.steps li .mark { font: 700 16px/1 var(--hand); text-align: center; }
+  ol.steps li .mark { font: 400 16px/1 var(--hand); text-align: center; }
   ol.steps li.done { color: var(--ink); }
   ol.steps li.done .mark { color: var(--felt); }
   ol.steps li.on { color: var(--ink); font-weight: 600; }
@@ -105,18 +102,15 @@
     ol.steps li.on .mark { animation: nudge 1.4s ease-in-out infinite; }
     @keyframes nudge { 50% { transform: translateX(3px); } }
   }
-
-  /* The list */
-  h2 { font: 700 21px/1.2 var(--hand); margin: 36px 0 0; }
+  h2 { font: 400 21px/1.2 var(--hand); margin: 36px 0 0; }
   .list-count { color: var(--pencil); font-size: 14px; margin-top: 2px; }
   .bar.thin { height: 16px; margin-top: 8px; }
-
   ul.items { list-style: none; margin: 14px 0 0; padding: 0; }
   ul.items li {
     display: grid; grid-template-columns: 2.4em 1fr auto; gap: 10px; align-items: baseline;
     padding: 8px 2px; border-bottom: 1.5px dashed var(--grid);
   }
-  ul.items .num { font: 700 18px/1.2 var(--hand); text-align: right; color: var(--pencil); }
+  ul.items .num { font: 400 18px/1.2 var(--hand); text-align: right; color: var(--pencil); }
   ul.items .title { min-width: 0; }
   ul.items .when { display: block; font-size: 13px; color: var(--pencil); }
   ul.items .chip {
@@ -131,32 +125,59 @@
   ul.items li.working .title { font-weight: 600; }
   ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
   ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
-
-  /* Lately */
   ul.log { list-style: none; margin: 12px 0 0; padding: 0; font-size: 15px; }
   ul.log li { display: grid; grid-template-columns: 3.6em 1fr; gap: 10px; padding: 3px 0; }
   ul.log time { color: var(--pencil); font-variant-numeric: tabular-nums; }
-
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
-
   @media (max-width: 520px) {
     .now-num { font-size: 44px; }
     .now-title { font-size: 20px; }
     ul.items li { grid-template-columns: 2em 1fr; }
     ul.items .chip { grid-column: 2; justify-self: start; }
   }
-  .asking { margin: 16px 0 0; padding: 12px 16px; font: 700 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
+  .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
   .needs-list { list-style: none; margin: 12px 0 0; padding: 0; }
   .needs-list li { display: grid; grid-template-columns: 2.4em 1fr; gap: 2px 10px; padding: 8px 2px; border-bottom: 1.5px dashed var(--grid); }
-  .needs-list .num { font: 700 18px/1.2 var(--hand); text-align: right; color: var(--marker); grid-row: span 2; }
+  .needs-list .num { font: 400 18px/1.2 var(--hand); text-align: right; color: var(--marker); grid-row: span 2; }
   .needs-list .what { grid-column: 2; font-size: 14px; color: var(--pencil); }
+  ul.tasks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
+  ul.tasks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: baseline; color: var(--pencil); }
+  ul.tasks li .mark { font: 400 16px/1 var(--hand); text-align: center; }
+  ul.tasks li.done { color: var(--ink); }
+  ul.tasks li.done .mark { color: var(--felt); }
+  ul.tasks li.on { color: var(--ink); }
+  ul.tasks li.on .mark { color: var(--marker); }
+  ul.tasks .label { min-width: 0; }
+  ul.tasks .late { display: block; font-size: 13px; color: var(--pencil); }
+  ul.tasks .tbar { grid-column: 2; height: 9px; border: 2px solid var(--rule); border-radius: var(--wobble-small); overflow: hidden; }
+  ul.tasks .tbar > i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-58deg, var(--marker) 0 4px, transparent 4px 7px); }
+  ul.tasks li.done .tbar > i { background: repeating-linear-gradient(-58deg, var(--felt) 0 4px, transparent 4px 7px); }
+  ul.tasks ul.sub { grid-column: 2; list-style: none; margin: 4px 0 0; padding: 0 0 0 14px; display: grid; gap: 6px; font-size: 14px; }
+  ul.tasks ul.sub li { grid-template-columns: 18px 1fr; }
+  ul.tasks ul.sub .tbar { height: 6px; border-width: 1.5px; }
+  .guess { margin: 10px 0 0; font-size: 13px; color: var(--pencil); }
+  @media (prefers-reduced-motion: reduce) { .bar > i, ul.tasks .tbar > i { transition: none; } }
+  @media (prefers-reduced-motion: no-preference) { ul.tasks .tbar > i { transition: width 0.9s linear; } }
+  .counts { margin: 12px 0 0; font-size: 15px; }
+  ul.items.finished li .title { color: var(--pencil); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 </style>
 </head>
 <body>
-<main>
-  <p id="needlink" class="notice" hidden>This page needs its whole link, the part after the # as well.</p>
-<div id="page">
-  <p id="asking" class="asking" hidden></p>
+<main id="page" hidden></main>
+
+<script>
+(function () {
+  'use strict';
+
+  // The data is one small JSON file in the store that holds the published hands. Its name is the part of the link after the # (a browser never sends that to a server), so the page itself holds no name.
+  var STORE = 'https://doodlepokerhands.blob.core.windows.net/build/';
+  var CHECK_EVERY = 10000;               // how often the page looks at the file again, while it is in front
+  var CHECK_DONE = 60000;                // ...and when everything is done: nothing is expected
+  var QUIET_AFTER = 15 * 60 * 1000;      // no update for this long past the running step's estimate: the builder may have stopped
+  var CAP = 0.95;                        // a step that is not done never shows more than this
+
+  // the structure of the page: not in the page until the first good answer (a wrong link must show nothing of it)
+  var MARKUP = `<p id="asking" class="asking" hidden></p>
   <header>
     <h1>Doodle Poker build</h1>
     <span id="fresh" role="status"></span>
@@ -176,7 +197,9 @@
       <span id="now-pct"></span>
       <span id="now-time"></span>
     </div>
-    <ol class="steps" id="now-steps"></ol>
+    <p class="counts" id="counts" hidden></p>
+    <ul class="tasks" id="tasks"></ul>
+    <p class="guess" id="guess" hidden>The bars are a guess from how long each step usually takes. They move by themselves between updates and never reach full until the step is done.</p>
   </section>
 
   <section id="needs" hidden>
@@ -192,21 +215,23 @@
   <h2>Lately</h2>
   <ul class="log" id="log"></ul>
 
-  <footer id="foot">This page reads one small file every 10 seconds while it is in front. Leave it open.</footer>
-</div>
-</main>
+  <section id="done-part" hidden>
+    <h2>Done</h2>
+    <ul class="items finished" id="done-items"></ul>
+  </section>
 
-<script>
-(function () {
-  'use strict';
-
-  // The data is one small JSON file in the store that holds the published hands. Its name is the part of the link after the # (a browser never sends that to a server), so the page itself holds no name.
-  var STORE = 'https://doodlepokerhands.blob.core.windows.net/build/';
-  var CHECK_EVERY = 10000;               // how often the page looks at the file again, while it is in front
-  var STALE_AFTER = 15 * 60 * 1000;      // no update for this long while an item is in play: say so
+  <footer id="foot">This page reads one small file while it is in front. Leave it open.</footer>`;
+  var built = false;
+  function build() {
+    if (built) return;
+    built = true;
+    var doc = new DOMParser().parseFromString('<body>' + MARKUP + '</body>', 'text/html');
+    document.getElementById('page').append.apply(document.getElementById('page'), Array.prototype.slice.call(doc.body.childNodes));
+  }
 
   var data = null;
-  var failed = false;
+  var gotGood = false;
+  var shown = {};                        // the highest each bar has shown (a bar never goes backwards)
   var name = location.hash.replace(/^#/, '');
   var $ = function (id) { return document.getElementById(id); };
   var el = function (tag, cls, text) {
@@ -237,11 +262,75 @@
     'waiting':  { cls: 'waiting', chip: 'Waiting' },
     'needs-you':{ cls: 'needs',   chip: 'Needs you' }
   };
+  var isFinished = function (i) { return i.state === 'done' || i.state === 'part'; };
+
+  /* ---------- the guess at a step's progress (0 to 1): the page moves it, the builder only says when it is done ---------- */
+
+  function fake(t, nowMs) {
+    if (t.state === 'done') return 1;
+    if (t.subtasks && t.subtasks.length) {
+      var sum = 0;
+      t.subtasks.forEach(function (s) { sum += fake(s, nowMs); });
+      var mean = sum / t.subtasks.length;
+      return t.state === 'done' ? 1 : Math.min(CAP, mean);
+    }
+    if (t.state !== 'on') return 0;
+    var real = typeof t.percent === 'number' ? Math.max(0, Math.min(CAP, t.percent / 100)) : 0;
+    var est = (t.estimateSec || 0) * 1000;
+    var started = t.startedAt ? new Date(t.startedAt).getTime() : nowMs;
+    var guess = 0;
+    if (est > 0) {
+      var r = Math.max(0, (nowMs - started) / est);
+      guess = r >= 1 ? CAP : CAP * (1 - Math.pow(1 - r, 1.2)); // eases: slows as it nears the end, and sits at 95% when it runs over
+    }
+    return Math.min(CAP, Math.max(guess, real));
+  }
+
+  // never backwards on screen
+  function steady(key, value) {
+    var v = Math.max(value, shown[key] || 0);
+    shown[key] = v;
+    return v;
+  }
+
+  function overrun(t, nowMs) {
+    if (t.state !== 'on' || !t.estimateSec || !t.startedAt) return false;
+    return nowMs - new Date(t.startedAt).getTime() > t.estimateSec * 1000 * (1 + 1 / 3);
+  }
 
   /* ---------- drawing ---------- */
 
+  function setBar(bar, pct, done) {
+    bar.classList.toggle('done', !!done);
+    bar.firstElementChild.style.width = Math.round(pct) + '%';
+    bar.setAttribute('aria-valuenow', Math.round(pct));
+  }
+
+  function taskNode(t, path, nowMs, sub) {
+    var li = el('li', t.state === 'done' ? 'done' : t.state === 'on' ? 'on' : '');
+    li.dataset.path = path;
+    li.append(el('span', 'mark', t.state === 'done' ? '✓' : t.state === 'on' ? '➜' : '·'));
+    var label = el('span', 'label', t.label);
+    if (overrun(t, nowMs)) label.append(el('span', 'late', 'taking longer than guessed'));
+    else if (t.state === 'on' && t.estimateSec && t.estimateSec >= 120) label.append(el('span', 'late', 'working on a long step'));
+    li.append(label);
+    if (t.estimateSec || (t.subtasks && t.subtasks.length) || t.state === 'done') {
+      var bar = el('span', 'tbar');
+      bar.append(document.createElement('i'));
+      bar.firstElementChild.style.width = Math.round(steady(path + '|' + (t.startedAt || ''), fake(t, nowMs)) * 100) + '%';
+      li.append(bar);
+    }
+    if (t.subtasks && t.subtasks.length) {
+      var ul = el('ul', 'sub');
+      t.subtasks.forEach(function (s, i) { ul.append(taskNode(s, path + '.' + i, nowMs, true)); });
+      li.append(ul);
+    }
+    return li;
+  }
+
   function draw() {
     if (!data) return;
+    var nowMs = Date.now();
     var now = data.now;
     var finished = data.state === 'finished';
 
@@ -249,32 +338,48 @@
     asking.hidden = !data.asking;
     asking.textContent = data.asking ? 'The builder is waiting for you: ' + data.asking : '';
 
+    var items = data.items || [];
+    var doneItems = items.filter(isFinished);
+    var open = items.filter(function (i) { return !isFinished(i); });
+    var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
+    var part = items.filter(function (i) { return i.state === 'part'; }).length;
+
     if (finished || !now) {
       $('now-num').textContent = '✓';
-      $('now-title').textContent = 'Finished the list';
+      $('now-title').textContent = 'All done';
       $('now-doing').textContent = data.summary || 'Nothing is being built.';
       setBar($('now-bar'), 100, true);
       $('now-pct').textContent = '';
-      $('now-steps').replaceChildren();
+      $('now-time').textContent = data.finishedAt ? 'Finished ' + clock(data.finishedAt) : '';
+      var counts = $('counts');
+      counts.hidden = false;
+      counts.textContent = (doneItems.length - part) + ' done, ' + part + ' done in part, ' + blocked + ' blocked' + (data.finishedAt ? ', at ' + clock(data.finishedAt) : '') + '.';
+      $('tasks').replaceChildren();
+      $('guess').hidden = true;
     } else {
+      $('counts').hidden = true;
       $('now-num').textContent = now.number;
       $('now-title').textContent = now.title;
       var doing = $('now-doing');
       doing.replaceChildren(el('b', null, 'Now: '), document.createTextNode(now.doing || ''));
-      var pct = Math.max(0, Math.min(100, Math.round(now.percent || 0)));
+      var tasks = now.tasks || now.steps || [];
+      var has = tasks.some(function (t) { return t.estimateSec || (t.subtasks && t.subtasks.length); });
+      var pct;
+      if (has) {
+        var sum = 0;
+        tasks.forEach(function (t, i) { sum += steady('t' + i + '|' + (t.startedAt || ''), fake(t, nowMs)); });
+        pct = tasks.length ? (sum / tasks.length) * 100 : 0;
+      } else pct = Math.max(0, Math.min(100, Math.round(now.percent || 0)));
+      pct = steady('now|' + now.number, pct / 100) * 100;
       setBar($('now-bar'), pct, false);
       var p = $('now-pct');
-      p.replaceChildren(el('strong', null, 'About ' + pct + '%'), document.createTextNode(' of this item, a best guess'));
-      var steps = $('now-steps');
-      steps.replaceChildren();
-      (now.steps || []).forEach(function (s) {
-        var li = el('li', s.state === 'done' ? 'done' : s.state === 'on' ? 'on' : '');
-        li.append(el('span', 'mark', s.state === 'done' ? '✓' : s.state === 'on' ? '➜' : '·'), el('span', null, s.label));
-        steps.append(li);
-      });
+      p.replaceChildren(el('strong', null, 'About ' + (has ? '~' : '') + Math.round(pct) + '%'), document.createTextNode(' of this item, a best guess'));
+      var ul = $('tasks');
+      ul.replaceChildren();
+      tasks.forEach(function (t, i) { ul.append(taskNode(t, 't' + i, nowMs, false)); });
+      $('guess').hidden = !has;
     }
 
-    // what is waiting for the player
     var needsYou = data.needsYou || [];
     $('needs').hidden = needsYou.length === 0;
     var nl = $('needs-list');
@@ -285,99 +390,138 @@
       nl.append(li);
     });
 
-    var items = data.items || [];
-    var doneCount = items.filter(function (i) { return i.state === 'done' || i.state === 'part'; }).length;
+    // the count and the bar count ALL items (the finished ones too), so the progress never seems to go backwards
     var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
-    var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
-    var words = doneCount + ' of ' + items.length + ' done';
+    var words = doneItems.length + ' of ' + items.length + ' done';
     if (blocked) words += ', ' + blocked + ' blocked';
     if (needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
     $('list-count').textContent = words;
-    setBar($('list-bar'), items.length ? (doneCount / items.length) * 100 : 0, true);
+    setBar($('list-bar'), items.length ? (doneItems.length / items.length) * 100 : 0, true);
 
-    var ul = $('items');
-    ul.replaceChildren();
-    items.forEach(function (i) {
+    var ul2 = $('items');
+    ul2.replaceChildren();
+    open.forEach(function (i) {
       var st = STATES[i.state] || STATES.waiting;
       var li = el('li', st.cls);
       var title = el('span', 'title', i.title);
       var when = '';
-      if (i.finishedAt && i.startedAt) when = 'Finished ' + clock(i.finishedAt) + ', took ' + span(new Date(i.finishedAt) - new Date(i.startedAt));
-      else if (i.finishedAt) when = 'Finished ' + clock(i.finishedAt);
-      else if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
+      if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
       if (when) title.append(el('span', 'when', when));
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
-      ul.append(li);
+      ul2.append(li);
     });
 
     var log = $('log');
     log.replaceChildren();
     (data.log || []).slice(0, 12).forEach(function (l) {
       var li = el('li');
-      var t = el('time', null, clock(l.at));
-      li.append(t, el('span', null, l.text));
+      li.append(el('time', null, clock(l.at)), el('span', null, l.text));
       log.append(li);
     });
 
-    tick();
+    // the finished items, crossed off, newest first, with how long each took
+    $('done-part').hidden = doneItems.length === 0;
+    var dl = $('done-items');
+    dl.replaceChildren();
+    doneItems.slice().sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); }).forEach(function (i) {
+      var st = STATES[i.state] || STATES.done;
+      var li = el('li', st.cls);
+      var title = el('span', 'title', i.title);
+      var when = '';
+      if (i.finishedAt && i.startedAt) when = 'Finished ' + clock(i.finishedAt) + ', took ' + span(new Date(i.finishedAt) - new Date(i.startedAt));
+      else if (i.finishedAt) when = 'Finished ' + clock(i.finishedAt);
+      if (i.note) when = when ? when + '. ' + i.note : i.note;
+      if (when) title.append(el('span', 'when', when));
+      li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
+      dl.append(li);
+    });
+
+    clockParts();
   }
 
-  function setBar(bar, pct, done) {
-    bar.classList.toggle('done', !!done);
-    bar.firstElementChild.style.width = pct + '%';
-    bar.setAttribute('aria-valuenow', Math.round(pct));
-  }
-
-  /* The parts that move with the clock, once a second. */
-  function tick() {
+  /* The parts that move with the clock, once a second, only while the page is in front. */
+  function clockParts() {
     if (!data) return;
-    var age = Date.now() - new Date(data.updatedAt).getTime();
-    var fresh = $('fresh');
-    var working = data.state !== 'finished' && data.now;
-    var stale = working && age > STALE_AFTER;
-    fresh.textContent = 'Updated ' + span(age) + ' ago';
-    fresh.classList.toggle('stale', !!stale);
+    var nowMs = Date.now();
+    var age = nowMs - new Date(data.updatedAt).getTime();
+    var finished = data.state === 'finished' || !data.now;
+    $('fresh').textContent = 'Updated ' + span(age) + ' ago';
+    var running = null;
+    if (!finished) (data.now.tasks || data.now.steps || []).forEach(function (t) { if (t.state === 'on') running = t; });
+    var allowed = QUIET_AFTER + (running && running.estimateSec ? running.estimateSec * 1000 : 0);
+    var quiet = !finished && age > allowed;
+    $('fresh').classList.toggle('stale', quiet);
     var warn = $('stale');
-    warn.hidden = !stale;
-    if (stale) warn.textContent = 'No update for ' + span(age) + '. The builder may have stopped: look at VS Code.';
-    if (working && data.now.startedAt) {
-      $('now-time').textContent = 'Started ' + clock(data.now.startedAt) + ', ' + span(Date.now() - new Date(data.now.startedAt)) + ' so far';
-    } else {
-      $('now-time').textContent = '';
-    }
+    warn.hidden = !quiet;
+    if (quiet) warn.textContent = 'No update for ' + span(age) + '. The builder may have stopped: look at VS Code.';
+    if (!finished && data.now.startedAt) $('now-time').textContent = 'Started ' + clock(data.now.startedAt) + ', ' + span(nowMs - new Date(data.now.startedAt)) + ' so far';
+  }
+
+  /* Once a second, only while the page is in front: the clock, and the bars (the page moves them between updates, from the same file). */
+  function tick() {
+    if (!data || document.hidden) return;
+    var finished = data.state === 'finished' || !data.now;
+    var tasks = finished ? [] : (data.now.tasks || data.now.steps || []);
+    if (tasks.some(function (t) { return t.estimateSec || (t.subtasks && t.subtasks.length); })) draw();
+    else clockParts();
+  }
+
+  /* ---------- the look of a wrong link: the website's own 404 page, put in place of this one ---------- */
+
+  function notFound() {
+    stopped = true;
+    fetch('/404.html', { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (html) { document.open(); document.write(html); document.close(); })
+      .catch(function () { document.body.textContent = 'Page not found.'; });
   }
 
   /* ---------- reading the file ---------- */
 
+  var stopped = false;
+  var timer = 0;
+  var tickTimer = 0;
+
   function load() {
-    if (document.hidden) return;
+    if (stopped || document.hidden) return;
     fetch(STORE + name + '.json?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+      .then(function (r) {
+        if (r.status === 404 && !gotGood) { notFound(); return null; } // (only the first answer: a later 404 is any other failure)
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+      })
       .then(function (j) {
-        failed = false;
+        if (!j || stopped) return;
+        if (!j.updatedAt || !Array.isArray(j.items)) throw new Error('shape');
+        gotGood = true;
+        build();
+        $('page').hidden = false;
         $('failed').hidden = true;
         if (!data || data.updatedAt !== j.updatedAt) { data = j; draw(); }
+        schedule(); // (how often to look again depends on whether everything is done)
       })
       .catch(function () {
-        failed = true;
+        if (stopped) return;
+        if (!gotGood) return; // (before the first good answer the page stays empty)
         var f = $('failed');
         f.hidden = false;
-        f.textContent = data ? 'The page could not read the file just now. It is showing what it last had.' : 'The page could not read the file. Check the link, or try again in a moment.';
+        f.textContent = 'The page cannot fetch the progress just now. It is showing what it last had.';
       });
   }
 
-  // Without its whole link the page shows nothing but a line saying so.
-  if (!/^[a-z0-9]{24,}$/.test(name)) {
-    $('page').hidden = true;
-    $('needlink').hidden = false;
-    return;
+  function schedule() {
+    clearTimeout(timer);
+    var finished = data && (data.state === 'finished' || !data.now);
+    timer = setTimeout(function () { load(); schedule(); }, finished ? CHECK_DONE : CHECK_EVERY);
   }
-  $('needlink').hidden = true;
+
+  // Without a whole link the page is the website's 404 page.
+  if (!/^[a-z0-9]{24,}$/.test(name)) { notFound(); return; }
   load();
-  setInterval(load, CHECK_EVERY);
-  setInterval(tick, 1000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+  schedule();
+  tickTimer = setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { load(); tick(); } });
 })();
 </script>
 </body>
