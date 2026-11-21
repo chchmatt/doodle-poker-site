@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#money">Money and stats</a></p>
   <h1>Stakes over time</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier pro">Pro<span class="sub"> · for full-time players</span></span></div>
+  
   <p>Under By stakes on the Results tab, a part called Stakes over time draws a line of your cash games, each dot at its big blind. It appears for cash games once you have five sessions at two different big blinds.</p>
   <p>A move is a change of your usual stake, not one session at another table. Your usual stake at a session is the big blind you played most over the five sessions round it, so one shot at a higher stake moves nothing. A real move shows after about three sessions at the new stake, dated at the first session played there. A ring marks each move.</p>
   <p>Each stretch at one stake lists its days, sessions, hours, result and big blinds an hour, greyed with “too few hours to mean much yet” until it has 20 sessions and 50 hours. Under the line, each move is written in words: up or down, the day, and how the next twenty sessions went against the twenty before, in big blinds an hour.</p>

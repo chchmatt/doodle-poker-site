@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#money">Money and stats</a></p>
   <h1>Staking: selling shares of a session</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier pro">Pro<span class="sub"> · for full-time players</span></span></div>
+  
   <p>Any session, cash game or tournament, planned, going or ended, has a Shares sold part. Each share is to a person from People (or a name you type), with a percentage, a markup, a note, and whether the backer paid up front. A markup of 1.2 means they pay 20% more than the plain share. Shares cannot add up to more than 100%.</p>
   <p>The app works out what the backer paid, what they are due from the cash-out, and what you owe them (or they owe you). Hero’s own result is the table result less the backers’ shares plus the markup you were paid, and that is what counts in your statistics, bankroll and goals. A switch on Statistics shows you the result at the table instead.</p>
   <p>You choose whether backers share in chips taken off the table and in expenses. Under Money, Staking, the Sold tab lists every share by session, with a range of days, how much is open in each currency, and CSV and PDF buttons. Each is open or settled, with the day and how it was paid. A person’s page shows where you stand with them.</p>

@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#hands">Recording hands</a></p>
   <h1>Quick Hand</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier rec">Rec<span class="sub"> · for casual play</span></span></div>
+  
   <p>Quick Hand is for when there is no time to tap through a table. It is the card with a lightning bolt in the menu along the bottom, and it opens at once, wherever you are in the app. Type the hand as you would jot it down: position, name, bet, cards and actions. What you write is kept until you build or clear it.</p>
   <p>The app has its own keyboards. A poker keyboard has Hero, the actions with All in, the positions and the cards. Under it sits a plain keyboard of letters and numbers. Words that run together are read apart as you type, so &quot;co15bbc&quot; becomes &quot;co 15 bb c&quot;. You can see your writing as plain text or as chips.</p>
   <p>Typing and saving need no signal. With your own Claude key and a connection, the app can build the hand from your words. Without one, your words are kept in the hand's notes.</p>

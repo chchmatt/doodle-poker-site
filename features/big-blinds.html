@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#money">Money and stats</a></p>
   <h1>Cash game results in big blinds</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier pro">Pro<span class="sub"> · for full-time players</span></span></div>
+  
   <p>A big blind is not money, so results counted in big blinds compare across stakes and across currencies. On the Results tab, under An hour, you get big blinds an hour and big blinds per 100 hands. The first is all the big blinds you won over all the hours you played.</p>
   <p>Big blinds per 100 hands is an estimate. It uses sessions where you recorded button laps, taking the hands an hour from the laps and the hours you played. It is written as an estimate (“about +6.2 bb”) with how many sessions it comes from, and nothing shows when no session has laps.</p>
   <p>The figures also appear beside the money in each By stakes and By place row, and on a finished session’s page. With more than one currency, one line adds every cash game in every currency together. A session where you moved to a game with a different big blind is left out, and the figure says how many. Tournaments are never counted. Records name your best and worst session in big blinds.</p>

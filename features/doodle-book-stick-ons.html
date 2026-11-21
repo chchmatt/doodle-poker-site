@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,9 +168,10 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#book">The Doodle Book</a></p>
   <h1>Notes, photos, stamps and tape</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier rec">Rec<span class="sub"> · for casual play</span></span></div>
+  
   <p>The T tool writes on a post-it. Choose the letters (marker pen or stencil), the colour of the words and the colour of the post-it, or no post-it at all. Tap the page, and a note lands a little crooked with the keyboard up, ready to type.</p>
   <p>The MORE button opens a bar of things to stick on: a date and time stamp, a drawing from My Stuff, a photo from your phone, and a strip of clear tape. Photos go on as small prints with a white border. Tape holds things together, so moving one thing moves everything the tape is on. A photo that is not stuck down hangs from a nail and swings when you tilt or shake the phone; Settings, Doodle Book can turn that off.</p>
-  <p>There is also an optional camera button that floats over every screen except the book. Tap it to take a picture of the screen, cut out the bit you want, and stick it on a page. A piece of paper you cut out lands on a pile you can stick back on. A stuck-on thing can be sent to the previous or next page with one button.</p>
+  <p>There is also an optional camera button that floats over every screen except the book (it is off to begin with: switch it on in Settings, Doodle Book). Tap it to take a picture of the screen, cut out the bit you want, and stick it on a page. A piece of paper you cut out lands on a pile you can stick back on. A stuck-on thing can be sent to the previous or next page with one button.</p>
   
   
   <h2>More in The Doodle Book</h2>

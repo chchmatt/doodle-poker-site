@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#money">Money and stats</a></p>
   <h1>The fortune teller and poker weather</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier rec">Rec<span class="sub"> · for casual play</span></span></div>
+  
   <p>At the foot of the Records tab, the fortune teller reads what sessions like the one you are about to play came to. Pick a place, stakes, a day of the week and a time of day, and it looks at your sessions at that place and stakes on that day and time. With fewer than three it uses a broader set, and it always says how many sessions it is guessing from.</p>
   <p>You get a line (“A win is a little more likely than not”), how many finished up, a typical result and the range most fell in, and how long such a session usually lasts. It ends with “Just for fun: the past is no promise.”</p>
   <p>Poker weather is a card on the same tab: a forecast for your bankroll from your last five sessions, from Hot and clear to Heavy rain, shown once you have three sessions. Winning a loss back says how many hours it would take to win back a loss, at your last 12 months’ rate and at your whole rate, and ends: a guess, not a promise.</p>

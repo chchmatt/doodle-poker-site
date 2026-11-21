@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -187,7 +190,7 @@
 <section class="card narrow tilt-r" id="back-up-and-restore">
   <h2>Back up and restore</h2>
   <p>A backup file is your own safety net, whatever else is kept: make one now and then, and keep it somewhere other than the phone. (The encrypted copy in the cloud is another, if you keep it.)</p>
-  <ol class="steps"><li>On Home, tap the gear for Settings, then <strong>Backup and restore</strong>.</li><li>Choose what to include. Everything is ticked except your Claude key.</li><li>Tap <strong>Backup</strong>. Your phone’s share sheet opens: save the file to Drive, email it to yourself, or send it to your computer. It is named <code>backup-</code> and the date, ending <code>.doodle-poker</code>.</li><li><strong>To restore</strong> (on this phone or a new one): install Doodle Poker, open <strong>Backup and restore</strong> and tap <strong>Restore from a file</strong>, then pick your file. (On a phone with the app installed, opening the file from Drive or email does the same.)</li><li>The app shows what is in the file next to what is on the phone. Choose <strong>Add what is missing</strong> to keep everything already there, or <strong>Replace</strong> to make the ticked parts match the file.</li></ol>
+  <ol class="steps"><li>On Home, tap the gear for Settings, then <strong>Backup and restore</strong>.</li><li>Choose what to include. Everything is ticked except your Claude key.</li><li>Tap <strong>Backup</strong>. Your phone’s share sheet opens: save the file to Drive, email it to yourself, or send it to your computer. It is named <code>backup-</code> and the date, ending <code>.doodle-poker</code>.</li><li><strong>To restore</strong> (on this phone or a new one): install Doodle Poker, open <strong>Backup and restore</strong> and tap <strong>Restore from a file</strong>, then pick your file. (On a phone with the app installed, opening the file from Drive or email does the same.)</li><li>The app shows what is in the file next to what is on the phone. Choose <strong>Add what is missing</strong> to keep everything already there, or <strong>Replace</strong> to make the ticked parts match the file.</li><li><strong>To start again:</strong> at the bottom of the Backup page, <strong>Delete everything on this phone</strong> removes your sessions, hands, people, settings, pictures and keys from this phone, after you type DELETE. It does not touch the encrypted copy in the cloud, backup files saved elsewhere or hands published on the website.</li></ol>
   <div class="note"><p><strong>Your Claude key</strong> is left out of a backup unless you switch on “Include Hero’s Claude key”. The app reminds you to back up after 7 days by default, on Home and as a notification from the phone; you can change the number of days on the Backup page.</p></div>
 </section>
 </main>

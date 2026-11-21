@@ -80,12 +80,15 @@
   .button.alt:hover { color: var(--ink); background: var(--sky); }
   .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
   @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  /* the Features page only: the picture starts at the top of its card, level with the heading, whichever side it is on (the home page's cards stay centred) */
+  .feature.top { align-items: start; }
   .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
   .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
   .pic { margin: 0; }
   .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
   .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
   .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .pic.phone img { border: 0; border-radius: 0; background: transparent; max-width: 300px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(45, 42, 62, 0.28)); }
   .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
   .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
   .person.smoker { z-index: 2; }
@@ -165,6 +168,7 @@
   <p class="small"><a href="../features.html">← All features</a> · <a href="../features.html#money">Money and stats</a></p>
   <h1>Tournament figures</h1>
   <div class="marks"><span class="mark-built">Built</span> <span class="tier rec">Rec<span class="sub"> · for casual play</span></span></div>
+  
   <p>When you end a tournament you can say where you finished, how many entered, and whether you made the final table. Finishing 1st to 9th ticks the final table by itself. All three are optional and can be changed on the session’s page afterwards.</p>
   <p>On the Results tab, a Tournaments block shows how many you played, what you paid (buy-ins, fees and rebuys), what you won, and your Return: what you won less what you paid, over what you paid. It also shows In the money (how many paid you anything), Final tables, your Best finish (“2nd of 180”) and your average finish as a share of the field. Each figure has an (i) saying how it is worked out.</p>
   <p>The All, Cash games or Tournaments choice lets you look at them together or apart. For tournaments, By stakes becomes By buy-in. Records add your best finish and biggest tournament win. Bounties, satellites and late registration are not counted.</p>
