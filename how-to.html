@@ -72,7 +72,6 @@
   .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
   .hero h1 { font-size: 2.8rem; }
   .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
-  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
   .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
   .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--edge); border-radius: 14px; background: var(--teal-btn); color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
   .button.alt { background: var(--fill); color: var(--ink); }
@@ -115,6 +114,24 @@
   .mini h3 { margin-top: 0; color: var(--teal-dark); }
   .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
   .toc a { font-weight: 700; }
+  .tier { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-family: "Permanent Marker", cursive; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .tier .sub { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+  .tier.rec { background: var(--fill); } .tier.reg { border-color: var(--teal); } .tier.pro { border-color: var(--orange); }
+  .mark-planned { display: inline-block; border: 2px dashed var(--warn); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; color: var(--warn); font-weight: 700; white-space: nowrap; }
+  .mark-built, .mark-needs { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .marks { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0.4em 0 1em; }
+  ul.flist { list-style: none; padding: 0; margin: 0.6em 0 0; }
+  ul.flist li { margin: 0.7em 0; }
+  ul.flist .blurb { display: block; }
+  .tiers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 960px; margin: 0 auto; }
+  @media (min-width: 900px) { .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } .tiers .card { margin-bottom: 0; } }
+  .price .amount { margin: 0.2em 0; font-family: "Saira Stencil One", sans-serif; font-size: 1.2rem; color: var(--orange); }
+  .price .save { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 0.85rem; color: var(--ink); }
+  .price .free { font-family: "Permanent Marker", cursive; font-size: 1.1rem; color: var(--teal-dark); margin: 0.3em 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  ul.cols { columns: 1; } .tier-card h3 { margin: 1em 0 0.3em; font-size: 1.05rem; }
+  .keybox { display: grid; gap: 6px; margin: 0.8em 0 0; padding: 0; list-style: none; }
+  .pn { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 1.4em; }
   .steps { list-style: none; counter-reset: s; padding: 0; }
   .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
   .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--edge); border-radius: 50%; background: var(--teal-btn); color: var(--ink); font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
@@ -132,6 +149,7 @@
   footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
   footer nav { font-size: 0.9rem; }
   footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  footer .social, .social-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin: 0.6em 0 0; padding: 0; list-style: none; opacity: 1; }
   code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: var(--fill); padding: 1px 5px; border-radius: 6px; border: 1px solid var(--edge); }
 </style>
 </head>
@@ -139,7 +157,7 @@
 <a class="skip" href="#main">Skip to the page</a>
 <header class="top">
   <a class="brand" href="./"><svg class="mark-svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="The Doodle Poker mark: two hand-drawn playing cards"><polyline points="10.8,32.9 43.6,22.8" /><polyline points="46.8,21.8 49,21.1 49,21.1 49.3,22.1" /><polyline points="49.3,81.8 27.9,88.4 27.9,88.4 10.8,32.9" /><polyline points="43.9,21.4 83.1,29.3 71.6,86.2 32.4,78.2 43.9,21.4" /><polyline points="56,58.6 55.9,59 56,60.3 56.6,62.1 57.9,63.9 59.8,65.4 62.2,66.2 64.8,66 67.3,64.9 69.2,63 70.3,60.6 70.3,57.8 69.3,55 67.7,52.1 65.6,49.4 63.6,46.7 61.8,44.3 60.7,42.2 60,40.6 59.9,39.5 59.9,39.2 59.8,39.5 59.2,40.4 58,41.7 56.1,43.1 53.6,44.7 50.7,46.3 47.7,48.1 45.1,50.1 43.1,52.3 42,54.9 42,57.5 43,60 44.9,62 47.3,63.2 49.8,63.4 52.1,62.8 54,61.5 55.2,60.1 55.8,59 56,58.6" /><polyline points="55.8,59.6 53.2,72.3" /></svg><span>Doodle Poker</span></a>
-  <nav aria-label="Pages"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html" aria-current="page">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+  <nav aria-label="Pages"><a href="./">Home</a><a href="features.html">Features</a><a href="pricing.html">Pricing</a><a href="how-to.html" aria-current="page">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
 </header>
 <main id="main">
 <section class="card narrow">
@@ -167,9 +185,9 @@
 </section>
 <section class="card narrow tilt-r" id="back-up-and-restore">
   <h2>Back up and restore</h2>
-  <p>Everything lives on your phone, so a backup file is your safety net. Make one now and then, and keep it somewhere other than the phone.</p>
+  <p>A backup file is your own safety net, whatever else is kept: make one now and then, and keep it somewhere other than the phone. (The encrypted copy in the cloud is another, if you keep it.)</p>
   <ol class="steps"><li>On Home, tap the gear for Settings, then <strong>Backup and restore</strong>.</li><li>Choose what to include. Everything is ticked except your Claude key.</li><li>Tap <strong>Backup</strong>. Your phone’s share sheet opens: save the file to Drive, email it to yourself, or send it to your computer. It is named <code>backup-</code> and the date, ending <code>.doodle-poker</code>.</li><li><strong>To restore</strong> (on this phone or a new one): install Doodle Poker, open <strong>Backup and restore</strong> and tap <strong>Restore from a file</strong>, then pick your file. (On a phone with the app installed, opening the file from Drive or email does the same.)</li><li>The app shows what is in the file next to what is on the phone. Choose <strong>Add what is missing</strong> to keep everything already there, or <strong>Replace</strong> to make the ticked parts match the file.</li></ol>
-  <div class="note"><p><strong>Your Claude key</strong> is left out of a backup unless you switch on “Include my Claude key”. The app reminds you to back up after 7 days by default, on Home and as a notification from the phone; you can change the number of days on the Backup page.</p></div>
+  <div class="note"><p><strong>Your Claude key</strong> is left out of a backup unless you switch on “Include Hero’s Claude key”. The app reminds you to back up after 7 days by default, on Home and as a notification from the phone; you can change the number of days on the Backup page.</p></div>
 </section>
 </main>
 <aside class="share" aria-label="Share this page" data-url="https://doodlepoker.com/how-to.html">
@@ -189,8 +207,10 @@
 </aside>
 <script>(function(){var b=document.querySelector('.share');if(!b)return;var u=location.href.split('#')[0],t=document.title;b.querySelectorAll('a[data-to]').forEach(function(a){a.href=a.getAttribute('data-to').replace('{u}',encodeURIComponent(u)).replace('{t}',encodeURIComponent(t));});var said=b.querySelector('.share-said');b.querySelector('[data-copy]').onclick=function(){var done=function(){said.textContent='Link copied';};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done,function(){prompt('Copy this link',u);});}else{prompt('Copy this link',u);}};var n=b.querySelector('[data-native]');if(navigator.share){n.hidden=false;n.onclick=function(){navigator.share({title:t,url:u}).catch(function(){});};}})();</script>
 <footer>
-  <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
-  <p>Doodle Poker · coming soon · <a href="contact/">Contact</a></p>
+  <nav aria-label="Pages (again)"><a href="./">Home</a><a href="features.html">Features</a><a href="pricing.html">Pricing</a><a href="how-to.html">How to</a><a href="faq.html">FAQ</a><a href="whats-new.html">What’s new</a><a href="privacy.html">Privacy</a><a href="support.html">Support</a></nav>
+  <p>Doodle Poker · <a href="contact/">Contact</a> · <a href="mailto:hello@doodlepoker.com">hello@doodlepoker.com</a></p>
+  <ul class="social" aria-label="Doodle Poker on social media"><li><a href="https://x.com/doodlepokerapp" target="_blank" rel="noopener" aria-label="Doodle Poker on X (opens in a new tab)">X</a></li><li><a href="https://www.instagram.com/doodlepoker" target="_blank" rel="noopener" aria-label="Doodle Poker on Instagram (opens in a new tab)">Instagram</a></li></ul>
 </footer>
+
 </body>
 </html>

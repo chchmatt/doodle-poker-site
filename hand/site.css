@@ -48,7 +48,6 @@
   .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
   .hero h1 { font-size: 2.8rem; }
   .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
-  .soon { display: inline-block; margin: 0.4em 0; padding: 6px 18px; border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); font-family: "Permanent Marker", cursive; color: var(--orange); font-size: 1.25rem; transform: rotate(-2deg); }
   .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
   .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--edge); border-radius: 14px; background: var(--teal-btn); color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
   .button.alt { background: var(--fill); color: var(--ink); }
@@ -91,6 +90,24 @@
   .mini h3 { margin-top: 0; color: var(--teal-dark); }
   .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
   .toc a { font-weight: 700; }
+  .tier { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-family: "Permanent Marker", cursive; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .tier .sub { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+  .tier.rec { background: var(--fill); } .tier.reg { border-color: var(--teal); } .tier.pro { border-color: var(--orange); }
+  .mark-planned { display: inline-block; border: 2px dashed var(--warn); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; color: var(--warn); font-weight: 700; white-space: nowrap; }
+  .mark-built, .mark-needs { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .marks { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0.4em 0 1em; }
+  ul.flist { list-style: none; padding: 0; margin: 0.6em 0 0; }
+  ul.flist li { margin: 0.7em 0; }
+  ul.flist .blurb { display: block; }
+  .tiers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 960px; margin: 0 auto; }
+  @media (min-width: 900px) { .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } .tiers .card { margin-bottom: 0; } }
+  .price .amount { margin: 0.2em 0; font-family: "Saira Stencil One", sans-serif; font-size: 1.2rem; color: var(--orange); }
+  .price .save { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 0.85rem; color: var(--ink); }
+  .price .free { font-family: "Permanent Marker", cursive; font-size: 1.1rem; color: var(--teal-dark); margin: 0.3em 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  ul.cols { columns: 1; } .tier-card h3 { margin: 1em 0 0.3em; font-size: 1.05rem; }
+  .keybox { display: grid; gap: 6px; margin: 0.8em 0 0; padding: 0; list-style: none; }
+  .pn { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 1.4em; }
   .steps { list-style: none; counter-reset: s; padding: 0; }
   .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
   .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--edge); border-radius: 50%; background: var(--teal-btn); color: var(--ink); font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
@@ -108,6 +125,7 @@
   footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
   footer nav { font-size: 0.9rem; }
   footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  footer .social, .social-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin: 0.6em 0 0; padding: 0; list-style: none; opacity: 1; }
   code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: var(--fill); padding: 1px 5px; border-radius: 6px; border: 1px solid var(--edge); }
 
   body { overflow-x: hidden; }

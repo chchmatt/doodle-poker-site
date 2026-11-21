@@ -1,0 +1,157 @@
+
+  [hidden] { display: none !important; }
+  .share { max-width: 960px; margin: 28px auto 8px; padding: 0 16px; text-align: center; }
+  .share p { margin: 0 0 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; }
+  .share ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .share a, .share button { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; min-width: 40px; min-height: 40px; padding: 0; border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); color: var(--ink); cursor: pointer; }
+  .share a:hover, .share button:hover, .share a:focus-visible, .share button:focus-visible { background: var(--teal-btn); }
+  .share a.brand svg { fill: var(--b); stroke: none; }
+  .share a.brand:hover, .share a.brand:focus-visible { border-color: var(--b); background: var(--fill); }
+  .share svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .share [hidden] { display: none; }
+  @font-face { font-family: "Permanent Marker"; src: url("../fonts/PermanentMarker-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Saira Stencil One"; src: url("../fonts/SairaStencilOne-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  /* (dark, like the app: its page, card and writing colours from src/theme.ts; the hand-drawn pictures keep their paper) */
+  :root { color-scheme: dark; --sky: #202124; --paper: #2b2c2f; --fill: #3c4043; --ink: #e8eaed; --edge: #80868b; --teal: #19a090; --teal-btn: #0f7a6d; --teal-dark: #3cc4b3; --orange: #ff5a36; --pic: #fffaf0; --dusk: #574a69; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  img { max-width: 100%; height: auto; display: block; }
+  svg.mark-svg polyline { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--paper); padding: 8px 12px; z-index: 5; }
+  .skip:focus { left: 8px; top: 8px; }
+  header.top { max-width: 960px; margin: 0 auto; padding: 18px 16px 0; text-align: center; }
+  header.top a.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.5rem; }
+  header.top .mark-svg { width: 40px; height: 40px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; margin: 10px 0 0; font-weight: 700; font-size: 0.98rem; }
+  nav a { color: var(--ink); text-decoration: none; padding: 4px 2px; border-bottom: 3px solid transparent; }
+  nav a:hover { border-bottom-color: var(--teal); }
+  nav a[aria-current] { border-bottom-color: var(--orange); }
+  main { max-width: 960px; margin: 16px auto 32px; padding: 0 16px; }
+  .card { background: var(--paper); border: 3px solid var(--edge); border-radius: 18px; padding: 22px 20px 24px; margin: 0 0 22px; }
+  .card.narrow { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .card:has(#hand) { overflow: hidden; }
+  @media (min-width: 720px) { .card { padding: 28px 32px 30px; } .tilt-l { transform: rotate(-0.6deg); } .tilt-r { transform: rotate(0.6deg); } }
+  h1, h2, h3, .marker { font-family: "Permanent Marker", cursive; font-weight: 400; }
+  h1 { font-size: 2.3rem; line-height: 1.15; margin: 0.1em 0 0.3em; }
+  h2 { color: var(--teal-dark); font-size: 1.55rem; line-height: 1.2; margin: 1.3em 0 0.3em; }
+  h3 { font-size: 1.2rem; margin: 1.2em 0 0.2em; }
+  .card > h2:first-child, .card > h1:first-child { margin-top: 0; }
+  p { margin: 0.6em 0; }
+  a { color: var(--teal-dark); }
+  a:hover { color: var(--orange); }
+  :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+  ul, ol { padding-left: 1.3em; margin: 0.6em 0; }
+  li { margin: 0.3em 0; }
+  .tag { color: var(--teal-dark); font-family: "Permanent Marker", cursive; font-size: 1.3rem; margin: 0 0 0.6em; }
+  .hero { text-align: center; }
+  .hero .mark-svg { width: 110px; height: 110px; margin: 0 auto; }
+  .hero h1 { font-size: 2.8rem; }
+  .hero .lead { font-size: 1.2rem; max-width: 34em; margin: 0.6em auto; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1em 0 0.2em; }
+  .button { display: inline-block; padding: 10px 22px; border: 3px solid var(--edge); border-radius: 14px; background: var(--teal-btn); color: var(--ink); text-decoration: none; font-family: "Permanent Marker", cursive; font-size: 1.15rem; }
+  .button.alt { background: var(--fill); color: var(--ink); }
+  .button:hover { color: var(--ink); background: var(--teal); }
+  .button.alt:hover { color: var(--ink); background: var(--sky); }
+  .feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: center; }
+  @media (min-width: 720px) { .feature { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } .feature.flip .pic { order: 2; } }
+  .pic img, .shot { border: 3px solid var(--edge); border-radius: 14px; background: var(--pic); width: 100%; }
+  .pic figcaption { font-size: 0.85rem; opacity: 0.75; margin-top: 6px; text-align: center; }
+  .pic { margin: 0; }
+  .shot { color: var(--ink); aspect-ratio: 9 / 16; max-width: 240px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; border-style: dashed; background: repeating-linear-gradient(135deg, var(--paper) 0 14px, #fff 14px 28px); }
+  .shot strong { font-family: "Permanent Marker", cursive; font-weight: 400; color: var(--orange); font-size: 1.15rem; }
+  .shot span { font-size: 0.85rem; margin-top: 6px; }
+  .people-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; padding: 14px 12px 4px; position: relative; overflow: hidden; background: var(--pic); border: 3px solid var(--edge); border-radius: 14px; }
+  .person { position: relative; aspect-ratio: 140 / 155; container-type: inline-size; }
+  .person.smoker { z-index: 2; }
+  .person .clip { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; overflow: hidden; border-radius: 8px; }
+  .person .frame { position: absolute; left: 14.2857%; top: 0; width: 71.4286%; height: 77.4194%; border: 3px solid var(--frame, #80868b); border-radius: 8px; }
+  .person img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; border: 0; border-radius: 0; background: none; }
+  .person .drink { pointer-events: none; transform-origin: var(--ox) var(--oy); animation: sip var(--cy) ease-in-out var(--cd) infinite; }
+  .person .sway { position: absolute; inset: 0; animation: sway var(--sw) ease-in-out var(--sd) infinite alternate; }
+  .person .lids { opacity: 0; animation: blink var(--cy) linear var(--cd) infinite; }
+  /* (the movements of the app's pictures, from components/face-view.tsx: a little sway, a blink now and then, and a sip: the drink rises to the mouth, tips, and goes back) */
+  /* (the fidget spinner of Gordon's card protector: it whirls round and round, slowing down, and rests; and Blue's cigarette smoke rises, widening and fading, all the way to the top of the picture) */
+  .person .spinner { width: 22%; left: 56.9%; top: 64.35%; height: auto; aspect-ratio: 1; animation: whirl 8s linear var(--cd) infinite; }
+  @keyframes whirl { 0% { transform: rotate(0); animation-timing-function: cubic-bezier(.12, .7, .25, 1); } 32%, 100% { transform: rotate(1260deg); } }
+  .person .smoke { position: absolute; width: 0; height: 280%; pointer-events: none; }
+  .person .smoke svg { position: absolute; left: -20cqw; bottom: 0; width: 40cqw; height: 100%; overflow: visible; }
+  @keyframes sway { from { transform: translate(-1.2%, -0.6%) rotate(-0.9deg); } to { transform: translate(1.2%, 0.6%) rotate(0.9deg); } }
+  @keyframes blink { 0%, 19%, 22%, 61%, 64%, 100% { opacity: 0; } 20.5%, 62.5% { opacity: 1; } }
+  @keyframes sip {
+    0%, 35%, 64%, 100% { transform: none; }
+    41%, 58% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)); }
+    46%, 53% { transform: translate(calc(var(--dx) * 1%), calc(var(--dy) * 1%)) rotate(40deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .person .sway, .person .lids, .person .drink, .person .spinner { animation: none; } .person .smoke { display: none; } }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } }
+  .mini { border: 3px solid var(--edge); border-radius: 14px; padding: 14px 16px; background: var(--fill); }
+  .mini h3 { margin-top: 0; color: var(--teal-dark); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 0; list-style: none; margin: 0.4em 0 0; }
+  .toc a { font-weight: 700; }
+  .tier { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-family: "Permanent Marker", cursive; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .tier .sub { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 400; }
+  .tier.rec { background: var(--fill); } .tier.reg { border-color: var(--teal); } .tier.pro { border-color: var(--orange); }
+  .mark-planned { display: inline-block; border: 2px dashed var(--warn); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; color: var(--warn); font-weight: 700; white-space: nowrap; }
+  .mark-built, .mark-needs { display: inline-block; border: 2px solid var(--edge); border-radius: 999px; padding: 0 10px; font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .marks { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0.4em 0 1em; }
+  ul.flist { list-style: none; padding: 0; margin: 0.6em 0 0; }
+  ul.flist li { margin: 0.7em 0; }
+  ul.flist .blurb { display: block; }
+  .tiers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-width: 960px; margin: 0 auto; }
+  @media (min-width: 900px) { .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } .tiers .card { margin-bottom: 0; } }
+  .price .amount { margin: 0.2em 0; font-family: "Saira Stencil One", sans-serif; font-size: 1.2rem; color: var(--orange); }
+  .price .save { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 0.85rem; color: var(--ink); }
+  .price .free { font-family: "Permanent Marker", cursive; font-size: 1.1rem; color: var(--teal-dark); margin: 0.3em 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  ul.cols { columns: 1; } .tier-card h3 { margin: 1em 0 0.3em; font-size: 1.05rem; }
+  .keybox { display: grid; gap: 6px; margin: 0.8em 0 0; padding: 0; list-style: none; }
+  .pn { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 1.4em; }
+  .steps { list-style: none; counter-reset: s; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 44px; margin: 0.8em 0; min-height: 34px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 3px solid var(--edge); border-radius: 50%; background: var(--teal-btn); color: var(--ink); font-family: "Saira Stencil One", "Permanent Marker", sans-serif; font-size: 1.05rem; line-height: 28px; text-align: center; }
+  .note { border-left: 6px solid var(--orange); padding: 2px 0 2px 14px; margin: 1em 0; }
+  details { border: 3px solid var(--edge); border-radius: 14px; background: var(--fill); margin: 12px 0; }
+  summary { cursor: pointer; padding: 12px 16px; font-family: "Permanent Marker", cursive; font-size: 1.15rem; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 1.2em; color: var(--orange); }
+  details[open] summary::before { content: "–"; }
+  details > div { padding: 0 16px 12px; }
+  @media (hover: hover) and (pointer: fine) { .phone-only { display: none; } } /* (the Email support button is for phones: a computer often has no mail app to open, so there the address is just written out) */
+  .release { border-top: 3px dashed var(--edge); padding-top: 14px; margin-top: 20px; }
+  .release:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  .release .ver { font-family: "Saira Stencil One", sans-serif; color: var(--orange); font-size: 1.6rem; }
+  footer { max-width: 960px; margin: 0 auto 28px; padding: 0 16px; text-align: center; font-size: 0.9rem; }
+  footer nav { font-size: 0.9rem; }
+  footer p { margin: 0.6em 0 0; opacity: 0.8; }
+  footer .social, .social-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin: 0.6em 0 0; padding: 0; list-style: none; opacity: 1; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; background: var(--fill); padding: 1px 5px; border-radius: 6px; border: 1px solid var(--edge); }
+
+  #live { min-width: 0; max-width: 600px; margin: 0 auto; }
+  .lv-status { display: inline-flex; align-items: center; gap: 8px; font-family: "Permanent Marker", cursive; font-size: 1.05rem; margin: 0 0 0.2em; }
+  .lv-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--edge); border: 2px solid var(--ink, #2d2a3e); }
+  .lv-status.s-going .lv-dot { background: var(--orange, #ff5a36); animation: lvpulse 1.6s ease-in-out infinite; }
+  .lv-status.s-break .lv-dot { background: #f2c14e; }
+  .lv-status.quiet { opacity: 0.75; }
+  @keyframes lvpulse { 50% { transform: scale(1.35); opacity: 0.6; } }
+  @media (prefers-reduced-motion: reduce) { .lv-status.s-going .lv-dot { animation: none; } }
+  .lv-title { margin: 0.1em 0 0.1em; }
+  .lv-words { margin: 0 0 0.4em; font-style: italic; }
+  .lv-meta { margin: 0.1em 0 0.6em; opacity: 0.85; font-size: 0.95rem; }
+  .lv-big { font-family: "Saira Stencil One", sans-serif; font-size: 3rem; line-height: 1; margin: 0.1em 0 0; color: var(--orange, #ff5a36); }
+  .lv-label { margin: 0 0 0.4em; opacity: 0.75; font-size: 0.9rem; }
+  .lv-shape { margin: 0.2em 0 0.6em; font-family: "Permanent Marker", cursive; }
+  .lv-chart { width: 100%; height: auto; display: block; background: #fffaf0; border: 3px solid #2d2a3e; border-radius: 18px; transform: rotate(-0.6deg); }
+  .lv-base { stroke: rgba(45, 42, 62, 0.35); stroke-width: 2; stroke-dasharray: 4 6; fill: none; }
+  .lv-line { stroke: #2d2a3e; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .lv-end { fill: #ff5a36; stroke: #2d2a3e; stroke-width: 2.5; }
+  .lv-range, .lv-time, .lv-updated { margin: 0.5em 0 0; font-size: 0.95rem; }
+  .lv-updated.quiet { color: #f2c14e; }
+  .lv-facts { list-style: none; padding: 0; margin: 1em 0 0; border-top: 2px dashed var(--edge); }
+  .lv-facts li { display: flex; justify-content: space-between; padding: 5px 4px; border-bottom: 1px solid rgba(128, 134, 139, 0.35); }
+  .lv-h { font-family: "Permanent Marker", cursive; margin: 1.2em 0 0.3em; color: var(--teal-dark); }
+  .lv-notes { padding-left: 1.2em; margin: 0; }
+  .lv-notes li { padding: 3px 0; }
+  .lv-notes em { font-style: normal; opacity: 0.7; margin-right: 6px; }
+  noscript p { text-align: center; }
