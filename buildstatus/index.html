@@ -129,11 +129,10 @@
   ul.items li.done .title { color: var(--pencil); }
   ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
   ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
-  /* the item in play, in the main list AND in the list of what needs the player: one rule, so a change to the highlight changes both */
+  /* the item in play in the list */
   .is-working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
   .is-working .chip, .is-working .num { color: var(--marker); }
   .is-working .title { font-weight: 600; }
-  .needs-list .wk { font-weight: 700; color: var(--marker); }
   ul.tasks .when { color: var(--pencil); font-size: 13px; margin-left: 8px; white-space: nowrap; }
   ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
   ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
@@ -148,10 +147,9 @@
     ul.items .chip { grid-column: 2; justify-self: start; }
   }
   .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
-  .needs-list { list-style: none; margin: 12px 0 0; padding: 0; }
-  .needs-list li { display: grid; grid-template-columns: var(--numw, 2.4em) 1fr; gap: 2px 10px; padding: 8px 2px; border-bottom: 1.5px dashed var(--grid); }
-  .needs-list .num { font: 400 18px/1.2 var(--hand); white-space: nowrap; text-align: right; color: var(--marker); grid-row: span 2; }
-  .needs-list .what { grid-column: 2; font-size: 14px; color: var(--pencil); }
+  /* under an item's title in the list: why it needs the player (item 121), what it waits for and holds up, and who queued it (item 117) */
+  ul.items .what, ul.items .deps { display: block; font-size: 14px; font-weight: 400; color: var(--pencil); overflow-wrap: anywhere; }
+  ul.items .deps .ok { color: var(--teal-ink, var(--pencil)); }
   ul.tasks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
   ul.tasks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: baseline; color: var(--pencil); }
   ul.tasks li .mark { font: 400 16px/1 var(--hand); text-align: center; }
@@ -187,6 +185,7 @@
   var CHECK_DONE = 60000;                // ...and when everything is done: nothing is expected
   var WATCHER_QUIET_AFTER = 3 * 60 * 1000; // a build is going and the watcher has not looked for this long: the page may be out of date
   var QUIET_AFTER = 15 * 60 * 1000;      // no update for this long past the running step's estimate: the builder may have stopped
+  var BUILDER_QUIET_AFTER = 10 * 60 * 1000; // a run is going and the builder has written nothing for this long (item 120)
   var BETWEEN_QUIET_AFTER = 10 * 60 * 1000; // between two items for this long: the builder may have stopped (item 86)
   var CAP = 0.95;                        // a step that is not done never shows more than this
 
@@ -216,12 +215,8 @@
     </div>
     <p class="counts" id="counts" hidden></p>
     <ul class="tasks" id="tasks"></ul>
+    <p class="notice warn" id="builder-quiet" hidden></p>
     <p class="guess" id="guess" hidden>The bars are a guess from how long each step usually takes. They move by themselves between updates and never reach full until the step is done.</p>
-  </section>
-
-  <section id="needs" hidden>
-    <h2>Needs you</h2>
-    <ul class="needs-list" id="needs-list"></ul>
   </section>
 
   <h2>The list</h2>
@@ -408,6 +403,31 @@
     return 'Between items: ' + b.text + (isNaN(at) ? '' : ', since ' + clock(b.at) + ', ' + span(Math.max(0, nowMs - at)) + ' so far');
   }
 
+  /* depLines:start */
+  /* Item 117: under an open item's title: "Waits for 199 ..., 201 ..." (each number with its title in the list; a number that is Done, or no longer in the list, is ticked; nothing when all are done), "Holds up 200, 202" (the open items that wait for this one, worked out from their `after`), "Queued by 199". */
+  function depLines(it, lastOf, items) {
+    var out = [];
+    var after = Array.isArray(it.after) ? it.after.filter(function (n) { return typeof n === 'number'; }) : [];
+    var open = after.filter(function (n) { var e = lastOf[n]; return e && !isFinished(e); });
+    if (open.length) {
+      var w = el('span', 'deps');
+      w.append(document.createTextNode('Waits for '));
+      after.forEach(function (n, k) {
+        var e = lastOf[n];
+        var done = !e || isFinished(e);
+        var part = el('span', done ? 'ok' : null, (done ? '\u2713 ' : '') + n + (e && e.title ? ' ' + e.title : ''));
+        w.append(part);
+        if (k < after.length - 1) w.append(document.createTextNode(', '));
+      });
+      out.push(w);
+    }
+    var holds = items.filter(function (o) { return o !== it && !isFinished(o) && Array.isArray(o.after) && o.after.indexOf(it.number) >= 0; }).map(function (o) { return o.number; });
+    if (holds.length) out.push(el('span', 'deps', 'Holds up ' + holds.join(', ')));
+    if (typeof it.queuedBy === 'number') out.push(el('span', 'deps', 'Queued by ' + it.queuedBy));
+    return out;
+  }
+  /* depLines:end */
+
   /* ---------- drawing ---------- */
 
   function setBar(bar, pct, done) {
@@ -527,27 +547,10 @@
       $('guess').hidden = !has;
     }
 
-    var needsYou = data.needsYou || [];
-    $('needs').hidden = needsYou.length === 0;
-    var nl = $('needs-list');
-    nl.replaceChildren();
-    var playNo = null; // (the item in play, by the rule of the main list: its entry is 'working'; in the gap between two items none is)
-    if (!between && !finished && now) playNo = String(now.number);
-    needsYou.forEach(function (n) {
-      var entry = lastOf[n.number];
-      var inPlay = !between && ((entry && entry.state === 'working') || (playNo !== null && String(n.number) === playNo && !(entry && isFinished(entry))));
-      var li = el('li', inPlay ? 'is-working' : '');
-      var what = el('span', 'what');
-      if (inPlay) what.append(el('strong', 'wk', 'Working'), document.createTextNode(' · '));
-      what.append(document.createTextNode(n.needs == null ? '' : String(n.needs)));
-      li.append(el('span', 'num', n.number), el('span', 'title', n.title), what);
-      nl.append(li);
-    });
-    numWidth(nl, needsYou);
-
     // the count and the bar count ALL items (the finished ones too), so the progress never seems to go backwards
-    // (the number is the length of the Needs you list when there is one, so the two always agree; otherwise the items marked needs-you)
-    var needs = Array.isArray(data.needsYou) && data.needsYou.length ? data.needsYou.length : items.filter(function (i) { return i.state === 'needs-you'; }).length;
+    // (the "need you" count is the number of items whose state is needs-you; the reason each needs the player is shown under its title in the list)
+    var needsYou = Array.isArray(data.needsYou) ? data.needsYou : [];
+    var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
     var words = doneItems.length + ' of ' + items.length + ' done';
     if (blocked) words += ', ' + blocked + ' blocked';
     if (needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
@@ -564,6 +567,11 @@
       if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
       if (when) title.append(el('span', 'when', when));
+      if (i.state === 'needs-you') {
+        var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
+        if (why && why.needs != null && String(why.needs)) title.append(el('span', 'what', String(why.needs)));
+      }
+      depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
       ul2.append(li);
     });
@@ -605,6 +613,13 @@
       pz.textContent = 'Paused: the Claude usage limit was reached. ' + (data.paused.until ? 'Trying again at ' + clock(data.paused.until) + '.' : 'Trying again soon.');
     } else pz.hidden = true;
     $('fresh').textContent = 'Progress changed ' + span(age) + ' ago';
+    // (item 120) while a run is going and the file has not been written for 10 minutes: when it was last written, by the viewer's clock, counting up while the page is open
+    var bq = $('builder-quiet');
+    var wrote = new Date(data.updatedAt).getTime();
+    if (data.state === 'working' && !isNaN(wrote) && nowMs - wrote > BUILDER_QUIET_AFTER) {
+      bq.hidden = false;
+      bq.textContent = 'No word from the builder since ' + stamp(data.updatedAt, nowMs) + ' (' + span(nowMs - wrote) + ')';
+    } else bq.hidden = true;
     // the watcher's own note (item 80): the time it last looked at the builder's file, written into the file it uploads while a build is going; with no note nothing is said about it
     var checked = data.watcherCheckedAt ? new Date(data.watcherCheckedAt).getTime() : NaN;
     var wl = $('watcher');
@@ -614,7 +629,7 @@
       var deadWatcher = wage > WATCHER_QUIET_AFTER;
       wl.hidden = false;
       wl.classList.toggle('stale', deadWatcher);
-      wl.textContent = deadWatcher ? 'The watcher has not checked for ' + span(wage) + ': this page may be out of date.' : 'Watcher checked ' + span(wage) + ' ago';
+      wl.textContent = deadWatcher ? 'The watcher has not checked for ' + span(wage) + ': this page may be out of date.' : 'The watcher last looked ' + span(wage) + ' ago';
     }
     var running = null;
     if (!finished) (data.now.tasks || data.now.steps || []).forEach(function (t) { if (t.state === 'on') running = t; });
