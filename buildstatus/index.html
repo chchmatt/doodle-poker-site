@@ -73,9 +73,13 @@
   .now-head { display: flex; gap: 16px; align-items: flex-start; }
   .now-num {
     font: 400 56px/0.9 var(--hand); color: var(--marker);
-    min-width: 1.2em; text-align: center;
+    min-width: 1.2em; text-align: center; flex: none;
   }
-  .now-title { font: 400 23px/1.25 var(--hand); margin: 4px 0 0; }
+  /* 4 or more digits: the number gets smaller by its digit count so the title keeps its room (the digits are counted in the script; there is no list of numbers) */
+  .now-num[data-digits="4"] { font-size: 40px; }
+  .now-num[data-digits="5"] { font-size: 32px; }
+  .now-num[data-digits="6"] { font-size: 27px; }
+  .now-title { font: 400 23px/1.25 var(--hand); margin: 4px 0 0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
   .now-doing { margin: 14px 0 0; font-size: 17px; }
   .now-doing b { font-weight: 600; }
   .bar {
@@ -112,10 +116,10 @@
   .bar.thin { height: 16px; margin-top: 8px; }
   ul.items { list-style: none; margin: 14px 0 0; padding: 0; }
   ul.items li {
-    display: grid; grid-template-columns: 2.4em 1fr auto; gap: 10px; align-items: baseline;
+    display: grid; grid-template-columns: var(--numw, 2.4em) 1fr auto; gap: 10px; align-items: baseline;
     padding: 8px 2px; border-bottom: 1.5px dashed var(--grid);
   }
-  ul.items .num { font: 400 18px/1.2 var(--hand); text-align: right; color: var(--pencil); }
+  ul.items .num { font: 400 18px/1.2 var(--hand); white-space: nowrap; text-align: right; color: var(--pencil); }
   ul.items .title { min-width: 0; }
   ul.items .when { display: block; font-size: 13px; color: var(--pencil); }
   ul.items .chip {
@@ -125,22 +129,28 @@
   ul.items li.done .title { color: var(--pencil); }
   ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
   ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
-  ul.items li.working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
-  ul.items li.working .chip, ul.items li.working .num { color: var(--marker); }
-  ul.items li.working .title { font-weight: 600; }
+  /* the item in play, in the main list AND in the list of what needs the player: one rule, so a change to the highlight changes both */
+  .is-working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
+  .is-working .chip, .is-working .num { color: var(--marker); }
+  .is-working .title { font-weight: 600; }
+  .needs-list .wk { font-weight: 700; color: var(--marker); }
+  ul.tasks .when { color: var(--pencil); font-size: 13px; margin-left: 8px; white-space: nowrap; }
   ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
   ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
   @media (max-width: 520px) {
     .now-num { font-size: 44px; }
+    .now-num[data-digits="4"] { font-size: 32px; }
+    .now-num[data-digits="5"] { font-size: 26px; }
+    .now-num[data-digits="6"] { font-size: 22px; }
     .now-title { font-size: 20px; }
-    ul.items li { grid-template-columns: 2em 1fr; }
+    ul.items li { grid-template-columns: var(--numw, 2em) 1fr; }
     ul.items .chip { grid-column: 2; justify-self: start; }
   }
   .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
   .needs-list { list-style: none; margin: 12px 0 0; padding: 0; }
-  .needs-list li { display: grid; grid-template-columns: 2.4em 1fr; gap: 2px 10px; padding: 8px 2px; border-bottom: 1.5px dashed var(--grid); }
-  .needs-list .num { font: 400 18px/1.2 var(--hand); text-align: right; color: var(--marker); grid-row: span 2; }
+  .needs-list li { display: grid; grid-template-columns: var(--numw, 2.4em) 1fr; gap: 2px 10px; padding: 8px 2px; border-bottom: 1.5px dashed var(--grid); }
+  .needs-list .num { font: 400 18px/1.2 var(--hand); white-space: nowrap; text-align: right; color: var(--marker); grid-row: span 2; }
   .needs-list .what { grid-column: 2; font-size: 14px; color: var(--pencil); }
   ul.tasks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
   ul.tasks li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; align-items: baseline; color: var(--pencil); }
@@ -177,6 +187,7 @@
   var CHECK_DONE = 60000;                // ...and when everything is done: nothing is expected
   var WATCHER_QUIET_AFTER = 3 * 60 * 1000; // a build is going and the watcher has not looked for this long: the page may be out of date
   var QUIET_AFTER = 15 * 60 * 1000;      // no update for this long past the running step's estimate: the builder may have stopped
+  var BETWEEN_QUIET_AFTER = 10 * 60 * 1000; // between two items for this long: the builder may have stopped (item 86)
   var CAP = 0.95;                        // a step that is not done never shows more than this
 
   // the structure of the page: not in the page until the first good answer (a wrong link must show nothing of it)
@@ -199,7 +210,7 @@
     <p class="now-doing" id="now-doing"></p>
     <div class="bar" id="now-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
     <div class="bar-end" id="now-end" hidden></div>
-    <div class="bar-words">
+    <div class="bar-words" id="bar-words">
       <span id="now-pct"></span>
       <span id="now-time"></span>
     </div>
@@ -219,7 +230,7 @@
   <ul class="items" id="items"></ul>
 
   <section id="done-part" hidden>
-    <h2>Done</h2>
+    <h2 id="done-head">Done</h2>
     <ul class="items finished" id="done-items"></ul>
   </section>
 
@@ -233,10 +244,17 @@
   }
 
   var data = null;
+  var between = null;                    // the gap between two items (item 86): {text, at}, or null while an item is in play
   var gotGood = false;
   var shown = {};                        // the highest each bar has shown (a bar never goes backwards)
   var name = location.hash.replace(/^#/, '');
   var $ = function (id) { return document.getElementById(id); };
+  // the column for the item numbers is as wide as the longest number in its list (a minimum, never a fixed width), so the titles line up on every row and nothing wraps under a number
+  var numWidth = function (ul, list) {
+    var d = 0;
+    list.forEach(function (i) { d = Math.max(d, String(i && i.number).length); });
+    ul.style.setProperty('--numw', Math.max(2.4, d * 0.7 + 0.5) + 'em');
+  };
   var el = function (tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -358,6 +376,38 @@
   }
   /* finishedWords:end */
 
+  /* ---------- times of tasks, and the gap between items ---------- */
+
+  /* taskWords:start */
+  /* What a task's line says (item 88): a done task, when it started and how long it took; a task that is on, when it started and how long it has been on; a task still to do, nothing; never a negative duration. */
+  function taskWords(t, nowMs) {
+    var s = t.startedAt ? new Date(t.startedAt).getTime() : NaN;
+    var f = t.finishedAt ? new Date(t.finishedAt).getTime() : NaN;
+    if (t.state === 'done') {
+      var took = typeof t.took === 'number' && t.took >= 0 ? t.took * 1000 : (!isNaN(s) && !isNaN(f) && f >= s ? f - s : NaN);
+      if (!isNaN(s) && !isNaN(took)) return stamp(t.startedAt, nowMs) + ', took ' + span(took);
+      if (!isNaN(s)) return stamp(t.startedAt, nowMs);
+      if (!isNaN(took)) return 'took ' + span(took);
+      return '';
+    }
+    if (t.state === 'on' && !isNaN(s)) return stamp(t.startedAt, nowMs) + (nowMs >= s ? ', on for ' + span(nowMs - s) : '');
+    return '';
+  }
+  /* taskWords:end */
+
+  /* The gap between two items (item 86): the file says so (`between`), or `now` still names an item the list says is finished: a finished item is never shown as running. */
+  function betweenOf(now, lastOf) {
+    if (data.between && data.between.at) return { text: String(data.between.text || ''), at: data.between.at };
+    var cur = now ? lastOf[now.number] : null;
+    if (cur && (isFinished(cur) || cur.state === 'blocked')) return { text: 'Item ' + now.number + (cur.title ? ' (' + cur.title + ')' : '') + ' finished' + (cur.finishedAt ? ' at ' + clock(cur.finishedAt) : '') + '; the next item has not started yet', at: cur.finishedAt || null, own: true };
+    return null;
+  }
+  function betweenLine(b, nowMs) {
+    var at = b.at ? new Date(b.at).getTime() : NaN;
+    if (b.own) return 'Between items: ' + b.text + (isNaN(at) ? '' : ', ' + span(Math.max(0, nowMs - at)) + ' so far');
+    return 'Between items: ' + b.text + (isNaN(at) ? '' : ', since ' + clock(b.at) + ', ' + span(Math.max(0, nowMs - at)) + ' so far');
+  }
+
   /* ---------- drawing ---------- */
 
   function setBar(bar, pct, done) {
@@ -373,6 +423,8 @@
     var label = el('span', 'label', t.label);
     if (overrun(t, nowMs)) label.append(el('span', 'late', 'taking longer than guessed'));
     else if (t.state === 'on' && t.estimateSec && t.estimateSec >= 120) label.append(el('span', 'late', 'working on a long step'));
+    var tw = taskWords(t, nowMs);
+    if (tw) label.append(el('span', 'when', tw));
     li.append(label);
     if (t.estimateSec || (t.subtasks && t.subtasks.length) || t.state === 'done') {
       var bar = el('span', 'tbar');
@@ -409,8 +461,15 @@
     var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
     var part = items.filter(function (i) { return i.state === 'part'; }).length;
 
+    between = finished || !now ? null : betweenOf(now, lastOf);
+    $('bar-words').hidden = !!between;
+    $('now-bar').hidden = !!between;
+    $('tasks').hidden = !!between;
+    if (between) { $('now-end').hidden = true; $('guess').hidden = true; }
+
     if (finished || !now) {
       $('now-num').textContent = '✓';
+      $('now-num').dataset.digits = '1';
       $('now-title').textContent = 'All done';
       $('now-doing').textContent = data.summary || 'Nothing is being built.';
       setBar($('now-bar'), 100, true);
@@ -422,9 +481,17 @@
       counts.textContent = (doneItems.length - part) + ' done, ' + part + ' done in part, ' + blocked + ' blocked' + (data.finishedAt ? ', at ' + clock(data.finishedAt) : '') + '.';
       $('tasks').replaceChildren();
       $('guess').hidden = true;
+    } else if (between) {
+      $('counts').hidden = true;
+      $('now-num').textContent = '·';
+      $('now-num').dataset.digits = '1';
+      $('now-title').textContent = 'Between items';
+      $('now-doing').textContent = betweenLine(between, nowMs);
+      $('tasks').replaceChildren();
     } else {
       $('counts').hidden = true;
       $('now-num').textContent = now.number;
+      $('now-num').dataset.digits = String(String(now.number).length);
       $('now-title').textContent = now.title;
       var doing = $('now-doing');
       doing.replaceChildren(el('b', null, 'Now: '), document.createTextNode(now.doing || ''));
@@ -464,11 +531,19 @@
     $('needs').hidden = needsYou.length === 0;
     var nl = $('needs-list');
     nl.replaceChildren();
+    var playNo = null; // (the item in play, by the rule of the main list: its entry is 'working'; in the gap between two items none is)
+    if (!between && !finished && now) playNo = String(now.number);
     needsYou.forEach(function (n) {
-      var li = el('li');
-      li.append(el('span', 'num', n.number), el('span', 'title', n.title), el('span', 'what', n.needs));
+      var entry = lastOf[n.number];
+      var inPlay = !between && ((entry && entry.state === 'working') || (playNo !== null && String(n.number) === playNo && !(entry && isFinished(entry))));
+      var li = el('li', inPlay ? 'is-working' : '');
+      var what = el('span', 'what');
+      if (inPlay) what.append(el('strong', 'wk', 'Working'), document.createTextNode(' · '));
+      what.append(document.createTextNode(n.needs == null ? '' : String(n.needs)));
+      li.append(el('span', 'num', n.number), el('span', 'title', n.title), what);
       nl.append(li);
     });
+    numWidth(nl, needsYou);
 
     // the count and the bar count ALL items (the finished ones too), so the progress never seems to go backwards
     // (the number is the length of the Needs you list when there is one, so the two always agree; otherwise the items marked needs-you)
@@ -483,7 +558,7 @@
     ul2.replaceChildren();
     open.forEach(function (i) {
       var st = STATES[i.state] || STATES.waiting;
-      var li = el('li', st.cls);
+      var li = el('li', st.cls + (i.state === 'working' ? ' is-working' : ''));
       var title = el('span', 'title', i.title);
       var when = '';
       if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
@@ -492,12 +567,17 @@
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
       ul2.append(li);
     });
+    numWidth(ul2, open);
 
     // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
     $('done-part').hidden = doneItems.length === 0;
     var dl = $('done-items');
     dl.replaceChildren();
-    doneItems.slice().sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); }).forEach(function (i) {
+    var doneSorted = doneItems.slice().sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); });
+    var DONE_SHOWN = 20; // (only the newest 20 are drawn; the count and the bar above still count every item)
+    $('done-head').textContent = doneSorted.length > DONE_SHOWN ? 'Done: the last ' + DONE_SHOWN + ' of ' + doneSorted.length : 'Done';
+    doneSorted = doneSorted.slice(0, DONE_SHOWN);
+    doneSorted.forEach(function (i) {
       var st = STATES[i.state] || STATES.done;
       var li = el('li', st.cls);
       var title = el('span', 'title', i.title);
@@ -507,6 +587,7 @@
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
       dl.append(li);
     });
+    numWidth(dl, doneSorted);
 
     clockParts();
   }
@@ -543,6 +624,13 @@
     var warn = $('stale');
     warn.hidden = !quiet;
     if (quiet) warn.textContent = 'No update for ' + span(age) + '. The builder may have stopped: look at VS Code.';
+    if (between && !finished) {
+      var bAt = between.at ? new Date(between.at).getTime() : NaN;
+      $('now-doing').textContent = betweenLine(between, nowMs);
+      var longGap = !isNaN(bAt) && nowMs - bAt > BETWEEN_QUIET_AFTER && !(data.paused && data.paused.at);
+      if (longGap) { warn.hidden = false; warn.textContent = 'Between items for ' + span(nowMs - bAt) + '. The builder may have stopped: look at VS Code.'; $('fresh').classList.add('stale'); }
+      else if (!quiet) warn.hidden = true;
+    }
     if (!finished && data.now.startedAt) $('now-time').textContent = 'Started ' + clock(data.now.startedAt) + ', ' + span(nowMs - new Date(data.now.startedAt)) + ' so far';
   }
 
