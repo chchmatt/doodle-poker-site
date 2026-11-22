@@ -241,6 +241,7 @@
   var data = null;
   var between = null;                    // the gap between two items (item 86): {text, at}, or null while an item is in play
   var gotGood = false;
+  var scale = 1;                         // item 122: what the last 20 items took over what was guessed for them (the file's `scale`, 0.2 to 1.5); 1 when the file has none
   var shown = {};                        // the highest each bar has shown (a bar never goes backwards)
   var name = location.hash.replace(/^#/, '');
   var $ = function (id) { return document.getElementById(id); };
@@ -292,7 +293,7 @@
     }
     if (t.state !== 'on') return 0;
     var real = typeof t.percent === 'number' ? Math.max(0, Math.min(CAP, t.percent / 100)) : 0;
-    var est = (t.estimateSec || 0) * 1000;
+    var est = (t.estimateSec || 0) * 1000 * scale;
     var started = t.startedAt ? new Date(t.startedAt).getTime() : nowMs;
     var guess = 0;
     if (est > 0) {
@@ -317,7 +318,8 @@
   /* ---------- the estimated finish of the item in play (a pure function: the time now plus the time still to run, over the tasks not done) ---------- */
 
   /* finishTime:start */
-  function finishTime(tasks, nowMs) {
+  function finishTime(tasks, nowMs, scaleBy) {
+    var k = typeof scaleBy === 'number' && scaleBy >= 0.2 && scaleBy <= 1.5 ? scaleBy : 1; // (item 122: the remaining estimates are multiplied by what the record says they usually come to)
     var leaves = [];
     (function collect(list) {
       (list || []).forEach(function (t) {
@@ -332,7 +334,7 @@
     var later = false;
     leaves.forEach(function (t) {
       if (t.state === 'done') return;
-      var est = t.estimateSec > 0 ? t.estimateSec * 1000 : avg;
+      var est = (t.estimateSec > 0 ? t.estimateSec * 1000 : avg) * k;
       if (t.state === 'on' && t.startedAt) {
         var elapsed = nowMs - new Date(t.startedAt).getTime();
         if (elapsed > est) later = true;
@@ -340,7 +342,7 @@
       } else remaining += est;
     });
     if (remaining <= 0) return null;
-    return { ms: nowMs + remaining, later: later };
+    return { ms: nowMs + remaining, later: later, scaled: k !== 1 };
   }
   /* finishTime:end */
 
@@ -348,7 +350,7 @@
   function finishWords(f, nowMs) {
     var d = new Date(f.ms);
     var day = d.getDate() !== new Date(nowMs).getDate() ? DAYS[d.getDay()] + ' ' : '';
-    return [f.later ? 'later than guessed, now about ' : 'done about ', day + clock(d.toISOString())];
+    return [f.later ? 'later than guessed, now about ' : 'done about ', day + clock(d.toISOString()), f.scaled ? ' (a guess, scaled from the last 20 items)' : ''];
   }
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -378,6 +380,7 @@
   function taskWords(t, nowMs) {
     var s = t.startedAt ? new Date(t.startedAt).getTime() : NaN;
     var f = t.finishedAt ? new Date(t.finishedAt).getTime() : NaN;
+    if (t.state === 'done' && t.untimed) return 'not timed'; // (item 122: finished with no real start, or in an instant: the time would be false)
     if (t.state === 'done') {
       var took = typeof t.took === 'number' && t.took >= 0 ? t.took * 1000 : (!isNaN(s) && !isNaN(f) && f >= s ? f - s : NaN);
       if (!isNaN(s) && !isNaN(took)) return stamp(t.startedAt, nowMs) + ', took ' + span(took);
@@ -461,6 +464,7 @@
   }
 
   function draw() {
+    scale = data && typeof data.scale === 'number' && data.scale >= 0.2 && data.scale <= 1.5 ? data.scale : 1;
     if (!data) return;
     var nowMs = Date.now();
     var now = data.now;
@@ -529,13 +533,13 @@
       // (the guessed finish: only while the item is in play, not when it is Done, Blocked or waiting for the player)
       var mine = lastOf[now.number];
       var inPlay = !mine || mine.state === 'working';
-      var fin = inPlay ? finishTime(tasks, nowMs) : null;
+      var fin = inPlay ? finishTime(tasks, nowMs, scale) : null;
       var endEl = $('now-end');
       endEl.hidden = !fin;
       endEl.classList.toggle('late', !!(fin && fin.later));
       if (fin) {
         var fw = finishWords(fin, nowMs);
-        endEl.replaceChildren(document.createTextNode(fw[0]), el('strong', null, fw[1]));
+        endEl.replaceChildren(document.createTextNode(fw[0]), el('strong', null, fw[1]), document.createTextNode(fw[2]));
       }
       setBar($('now-bar'), pct === null ? 0 : pct, false);
       var p = $('now-pct');
