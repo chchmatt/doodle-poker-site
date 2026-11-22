@@ -107,10 +107,6 @@
   ol.steps li.done .mark { color: var(--felt); }
   ol.steps li.on { color: var(--ink); font-weight: 600; }
   ol.steps li.on .mark { color: var(--marker); }
-  @media (prefers-reduced-motion: no-preference) {
-    ol.steps li.on .mark { animation: nudge 1.4s ease-in-out infinite; }
-    @keyframes nudge { 50% { transform: translateX(3px); } }
-  }
   h2 { font: 400 21px/1.2 var(--hand); margin: 36px 0 0; }
   .list-count { color: var(--pencil); font-size: 14px; margin-top: 2px; }
   .bar.thin { height: 16px; margin-top: 8px; }
@@ -130,10 +126,8 @@
   ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
   ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
   /* the item in play in the list */
-  .is-working { background: color-mix(in srgb, var(--felt) 16%, transparent); outline: 2px solid var(--ink); outline-offset: -2px; border-radius: var(--wobble-small); animation: nowfade .5s ease-out; }
+  .is-working { background: color-mix(in srgb, var(--felt) 16%, transparent); outline: 2px solid var(--ink); outline-offset: -2px; border-radius: var(--wobble-small); }
   .is-working .nowtag { display: inline-block; margin-right: 8px; padding: 0 8px; font-size: 12px; font-weight: 700; color: var(--paper, #fff); background: var(--felt); border: 2px solid var(--ink); border-radius: var(--wobble-small); }
-  @keyframes nowfade { from { opacity: .3; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .is-working { animation: none; } }
   .is-working .chip, .is-working .num { color: var(--marker); }
   .is-working .title { font-weight: 600; }
   ul.tasks .when { color: var(--pencil); font-size: 13px; margin-left: 8px; white-space: nowrap; }
@@ -151,9 +145,10 @@
   ul.items li.hl-wait { background: color-mix(in srgb, var(--felt) 22%, transparent); outline: 2px dashed var(--felt); outline-offset: -2px; }
   ul.items li.hl-hold { background: color-mix(in srgb, var(--marker) 20%, transparent); outline: 2px dotted var(--marker); outline-offset: -2px; }
   ul.items li.hl-wait .title, ul.items li.hl-hold .title { text-decoration: underline; text-underline-offset: 3px; }
-  nav.tabs { display: flex; gap: 6px; margin-top: 30px; overflow-x: auto; white-space: nowrap; border-bottom: 2px solid var(--ink); }
-  nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: none; border: 2px solid transparent; border-bottom: 0; border-radius: var(--wobble-small); padding: 6px 12px; cursor: pointer; flex: 0 0 auto; }
-  nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--paper); margin-bottom: -2px; }
+  /* (item 165) real tabs: each its own shape, the active one raised and open at the bottom into the page; no scroll bar of any kind (a narrow row wraps instead) and no line under the row */
+  nav.tabs { display: flex; flex-wrap: wrap; gap: 6px 4px; margin-top: 30px; padding: 0; }
+  nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: var(--grid); border: 2px solid var(--pencil); border-radius: 14px 14px 0 0; padding: 6px 12px; cursor: pointer; flex: 0 1 auto; min-width: 0; }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--card); padding-top: 9px; font-weight: 700; }
   nav.tabs button .n { margin-left: 6px; color: var(--felt); }
   #tab-list > h2, #tab-backlog > h2, #tab-june > h2, #done-head { margin-top: 18px; }
   h3.group { font: 400 17px/1.2 var(--hand); margin: 20px 0 4px; color: var(--pencil); }
@@ -211,6 +206,8 @@
   .cancelled-more { margin: 8px 0; text-align: right; }
   details.cancelled summary { cursor: pointer; font-family: var(--hand); }
   ul.items li.cancelled { opacity: 0.85; }
+  .now-rel { margin: 2px 0 6px; }
+  .now-rel .deps { display: block; font-size: 14px; color: var(--pencil); overflow-wrap: anywhere; }
   ul.items .what, ul.items .deps { display: block; font-size: 14px; font-weight: 400; color: var(--pencil); overflow-wrap: anywhere; }
   ul.items .deps .ok { color: var(--teal-ink, var(--pencil)); }
   ul.tasks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
@@ -270,6 +267,7 @@
       <p class="now-title" id="now-title"></p>
     </div>
     <p class="now-doing" id="now-doing"></p>
+    <div class="now-rel" id="now-rel"></div>
     <div class="bar" id="now-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
     <div class="bar-end" id="now-end" hidden></div>
     <div class="bar-words" id="bar-words">
@@ -1226,6 +1224,7 @@
 
     between = finished || !now ? null : betweenOf(now, lastOf);
     $('bar-words').hidden = !!between;
+    $('now-rel').replaceChildren(); // (item 165: filled again below while an item is in play)
     $('now-bar').hidden = !!between;
     $('tasks').hidden = !!between;
     if (between) { $('now-end').hidden = true; $('guess').hidden = true; }
@@ -1258,6 +1257,15 @@
       $('now-title').textContent = now.title;
       var doing = $('now-doing');
       doing.replaceChildren(el('b', null, 'Now: '), document.createTextNode(now.doing || ''));
+      // (item 165) what the item in play waits for and what it holds up, drawn as the list draws them: each open number is tappable and lights its row in The list
+      var rel = $('now-rel');
+      rel.replaceChildren();
+      var relItem = lastOf[now.number];
+      if (relItem) {
+        var relLines = depLines(relItem, lastOf, items);
+        if (!relLines.some(function (l) { return /^Waits for/.test(l.textContent); })) rel.append(el('span', 'deps', 'Ready: nothing to wait for'));
+        relLines.forEach(function (l) { rel.append(l); });
+      }
       var tasks = now.tasks || now.steps || [];
       var has = tasks.some(function (t) { return t.estimateSec || (t.subtasks && t.subtasks.length); });
       var pct;
@@ -1309,6 +1317,7 @@
     ul2.replaceChildren();
     rowOf = {};
     var drawRow = function (i) {
+      if (i.state === 'working') return null; // (item 165: the top box shows the item in play; the heading's count still includes it)
       var st = STATES[i.state] || STATES.waiting;
       var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
       var needsMark = i.state === 'needs-you' || !!why; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only)
@@ -1357,7 +1366,7 @@
     headOf = {};
     var grouped = Array.isArray(data.topics) && open.some(function (i) { return !!i.topic; });
     if (!grouped) {
-      open.forEach(function (i) { ul2.append(drawRow(i)); shownRows.push(i); });
+      open.forEach(function (i) { var r = drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
     } else {
       var groups = buildGroups(open, data.topics);
       topicGroupsNow = groups.filter(function (g) { return g.kind === 'topic'; });
@@ -1366,7 +1375,7 @@
         var h = drawTopicHead(g, isOpen);
         headOf[g.key] = h;
         ul2.append(h);
-        if (isOpen) g.rows.forEach(function (i) { ul2.append(drawRow(i)); shownRows.push(i); });
+        if (isOpen) g.rows.forEach(function (i) { var r = drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
       });
     }
     numWidth(ul2, shownRows);
