@@ -144,6 +144,13 @@
   ul.items li.paused .chip::before { content: '‖ '; font-weight: 700; }
   ul.items li.paused .title { color: var(--pencil); }
   /* the tabs (item 161): one row, never wrapped; on a narrow phone the row scrolls sideways */
+  /* item 126: the mark for an item that wants the player, the tappable numbers, and the highlights (told by an outline or underline as well as a tint) */
+  .needsmark { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .dep { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+  ul.items li.hl-self { outline: 2px solid var(--ink); outline-offset: -2px; }
+  ul.items li.hl-wait { background: color-mix(in srgb, var(--felt) 22%, transparent); outline: 2px dashed var(--felt); outline-offset: -2px; }
+  ul.items li.hl-hold { background: color-mix(in srgb, var(--marker) 20%, transparent); outline: 2px dotted var(--marker); outline-offset: -2px; }
+  ul.items li.hl-wait .title, ul.items li.hl-hold .title { text-decoration: underline; text-underline-offset: 3px; }
   nav.tabs { display: flex; gap: 6px; margin-top: 30px; overflow-x: auto; white-space: nowrap; border-bottom: 2px solid var(--ink); }
   nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: none; border: 2px solid transparent; border-bottom: 0; border-radius: var(--wobble-small); padding: 6px 12px; cursor: pointer; flex: 0 0 auto; }
   nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--paper); margin-bottom: -2px; }
@@ -272,6 +279,7 @@
     built = true;
     var doc = new DOMParser().parseFromString('<body>' + MARKUP + '</body>', 'text/html');
     document.getElementById('page').append.apply(document.getElementById('page'), Array.prototype.slice.call(doc.body.childNodes));
+    document.addEventListener('click', function () { if (tapped) { tapped = null; applyHighlights(); } }); // (a tap elsewhere clears the highlight)
     var moreBtn = document.getElementById('done-more');
     if (moreBtn) moreBtn.addEventListener('click', function () { doneShown += DONE_STEP; draw(); });
   }
@@ -468,6 +476,64 @@
   }
 
   /* Item 117: under an open item's title: "Waits for 199 ..., 201 ..." (each number with its title in the list; a number that is Done, or no longer in the list, is ticked; nothing when all are done), "Holds up 200, 202" (the open items that wait for this one, worked out from their `after`), "Queued by 199". */
+  /* Item 126: what the chip says for an open item. Working, Paused: as they are. Any other: "Waiting for 123" (the lowest-numbered open item it waits for, "+1", "+2" for more), or just "Waiting" (ready, waiting for a runner or for VS Code). */
+  function chipWords(i, lastOf) {
+    if (i.state === 'working') return 'Working';
+    if (i.state === 'paused') return 'Paused';
+    var open = (Array.isArray(i.after) ? i.after : []).filter(function (n) { var e = lastOf[n]; return typeof n === 'number' && e && !isFinished(e); }).sort(function (a, b) { return a - b; });
+    if (!open.length) return 'Waiting';
+    return 'Waiting for ' + open[0] + (open.length > 1 ? ' +' + (open.length - 1) : '');
+  }
+
+  /* Item 126: the hand-drawn person for "Needs you" (inline, in the page's pen: no file). */
+  function silhouette() {
+    var ns = 'http://www.w3.org/2000/svg';
+    var make = function (tag, attrs) { var e = document.createElementNS(ns, tag); Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); return e; };
+    var svg = make('svg', { viewBox: '0 0 24 24', width: '18', height: '18', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' });
+    svg.append(make('path', { d: 'M12 3.4c2 .1 3.4 1.6 3.3 3.6-.1 2-1.6 3.4-3.4 3.3-2-.1-3.3-1.5-3.2-3.5.1-1.9 1.5-3.5 3.3-3.4z' }));
+    svg.append(make('path', { d: 'M4.2 21c.3-4.6 3.5-7.2 7.9-7.2 4.2.1 7.4 2.6 7.7 7.2' }));
+    return svg;
+  }
+
+  /* Item 126: hover or tap on a number or a row lights up what it waits for and holds up. A tap stays until a second tap on the same thing or a tap elsewhere; a hover goes with the mouse. */
+  var tapped = null;   // {kind: 'num' | 'row', n}
+  var hovered = null;
+  var rowOf = {};
+  var itemsNow = [];
+  function applyHighlights() {
+    var a = tapped || hovered;
+    var self = {};
+    var wait = {};
+    var hold = {};
+    if (a) {
+      self[a.n] = true;
+      if (a.kind === 'row') {
+        var it = itemsNow.filter(function (o) { return o.number === a.n; })[0];
+        (it && Array.isArray(it.after) ? it.after : []).forEach(function (n) { wait[n] = true; });
+        itemsNow.forEach(function (o) { if (Array.isArray(o.after) && o.after.indexOf(a.n) >= 0) hold[o.number] = true; });
+      }
+    }
+    Object.keys(rowOf).forEach(function (k) {
+      var li = rowOf[k];
+      li.classList.toggle('hl-self', !!self[k]);
+      li.classList.toggle('hl-wait', !!wait[k]);
+      li.classList.toggle('hl-hold', !!hold[k]);
+    });
+  }
+  function depNumber(n) {
+    var b = el('span', 'dep', n);
+    b.addEventListener('mouseenter', function () { hovered = { kind: 'num', n: n }; applyHighlights(); });
+    b.addEventListener('mouseleave', function () { hovered = null; applyHighlights(); });
+    b.addEventListener('click', function (e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      tapped = tapped && tapped.kind === 'num' && tapped.n === n ? null : { kind: 'num', n: n };
+      applyHighlights();
+      var row = rowOf[n];
+      if (tapped && row && row.scrollIntoView) row.scrollIntoView({ behavior: 'smooth', block: 'center' }); // (a tap scrolls; a hover never does)
+    });
+    return b;
+  }
+
   function depLines(it, lastOf, items) {
     var out = [];
     var after = Array.isArray(it.after) ? it.after.filter(function (n) { return typeof n === 'number'; }) : [];
@@ -478,14 +544,24 @@
       after.forEach(function (n, k) {
         var e = lastOf[n];
         var done = !e || isFinished(e);
-        var part = el('span', done ? 'ok' : null, (done ? '\u2713 ' : '') + n + (e && e.title ? ' ' + e.title : ''));
+        var part = el('span', done ? 'ok' : null);
+        if (done) part.append(document.createTextNode('\u2713 ' + n + (e && e.title ? ' ' + e.title : '')));
+        else { part.append(depNumber(n)); if (e.title) part.append(document.createTextNode(' ' + e.title)); }
         w.append(part);
         if (k < after.length - 1) w.append(document.createTextNode(', '));
       });
       out.push(w);
     }
     var holds = items.filter(function (o) { return o !== it && !isFinished(o) && Array.isArray(o.after) && o.after.indexOf(it.number) >= 0; }).map(function (o) { return o.number; });
-    if (holds.length) out.push(el('span', 'deps', 'Holds up ' + holds.join(', ')));
+    if (holds.length) {
+      var hw = el('span', 'deps');
+      hw.append(document.createTextNode('Holds up '));
+      holds.forEach(function (n, k) {
+        hw.append(depNumber(n));
+        if (k < holds.length - 1) hw.append(document.createTextNode(', '));
+      });
+      out.push(hw);
+    }
     if (typeof it.queuedBy === 'number') out.push(el('span', 'deps', 'Queued by ' + it.queuedBy));
     return out;
   }
@@ -627,8 +703,11 @@
 
     var ul2 = $('items');
     ul2.replaceChildren();
+    rowOf = {};
     open.forEach(function (i) {
       var st = STATES[i.state] || STATES.waiting;
+      var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
+      var needsMark = i.state === 'needs-you' || !!why; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only)
       var li = el('li', st.cls + (i.state === 'working' ? ' is-working' : ''));
       var title = el('span', 'title');
       if (i.state === 'working') title.append(el('span', 'nowtag', 'Working now'));
@@ -637,8 +716,10 @@
       if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
       if (when) title.append(el('span', 'when', when));
-      if (i.state === 'needs-you') {
-        var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
+      if (needsMark) {
+        var nm = el('span', 'needsmark');
+        nm.append(silhouette(), document.createTextNode('Needs you'));
+        title.append(nm);
         if (why && why.needs != null && String(why.needs)) title.append(el('span', 'what', String(why.needs)));
       }
       if (i.state === 'paused') {
@@ -648,10 +729,23 @@
         title.append(el('span', 'what', pw));
       }
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
-      li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
+      var numEl = el('span', 'num', i.number);
+      li.append(numEl, title, el('span', 'chip', chipWords(i, lastOf)));
+      rowOf[i.number] = li;
+      [numEl, title].forEach(function (part) {
+        part.addEventListener('mouseenter', function () { hovered = { kind: 'row', n: i.number }; applyHighlights(); });
+        part.addEventListener('mouseleave', function () { hovered = null; applyHighlights(); });
+        part.addEventListener('click', function (e) {
+          if (e && e.stopPropagation) e.stopPropagation();
+          tapped = tapped && tapped.kind === 'row' && tapped.n === i.number ? null : { kind: 'row', n: i.number };
+          applyHighlights();
+        });
+      });
       ul2.append(li);
     });
     numWidth(ul2, open);
+    itemsNow = open;
+    applyHighlights(); // (the page redraws on every update: a tap still active is applied again to the new rows)
 
     // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
     // (item 161: from the permanent record's list when the file has it, with the finished items the file itself holds; the Done tab shows 20 and 20 more each time the button is pressed)
