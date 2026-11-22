@@ -765,7 +765,7 @@
         var q = queueEntry(data, n);
         var why = dlgCtx.needsYou.filter(function (o) { return o && String(o.number) === String(n); })[0];
         v.title = n + '. ' + i.title;
-        v.state = why && i.state !== 'needs-you' && i.state !== 'working' ? 'Needs you' : stateWord(i, q);
+        v.state = (why || i.attended === true) && i.state !== 'needs-you' && i.state !== 'working' && i.state !== 'paused' ? 'Needs you' : stateWord(i, q);
         if (i.state === 'working' && i.startedAt) v.lines.push('Started ' + clock(i.startedAt));
         if (i.note) v.lines.push(String(i.note));
         if (i.state === 'paused') {
@@ -773,7 +773,8 @@
           v.lines.push(q && q.topicPaused && !i.pausedFor && !q.pause ? 'Paused with its topic' : i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (ph && ph.reason ? ': ' + ph.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given'));
         }
         if (i.state === 'failed') v.lines.push('Failed: ' + (i.reason ? String(i.reason) : 'no reason given') + (i.branch ? ' (the work is on branch ' + String(i.branch) + ')' : ''));
-        if (why && why.needs != null && String(why.needs)) v.lines.push('Needs you: ' + String(why.needs));
+        var needsLine = why && why.needs != null && String(why.needs) ? String(why.needs) : i.attended === true && i.needs ? String(i.needs) : '';
+        if (needsLine) v.lines.push('Needs you: ' + needsLine);
         var after = (Array.isArray(i.after) ? i.after : []).filter(function (a) { return typeof a === 'number'; });
         if (after.length) v.lines.push('Waits for item ' + after.map(itemWords).join(', '));
         var holds = dlgCtx.items.filter(function (o) { return o !== i && !isFinished(o) && Array.isArray(o.after) && o.after.indexOf(n) >= 0; }).map(function (o) { return itemWords(o.number); });
@@ -1533,10 +1534,12 @@
     // the list's words and bar are for what is still REMAINING (item 123): the builder is always on the first of them, so with 10 left the bar is 10%, with 2 left 50%, and it is only full when nothing remains
     // (the "need you" count is the number of items whose state is needs-you; the reason each needs the player is shown under its title in the list)
     var needsYou = Array.isArray(data.needsYou) ? data.needsYou : [];
-    var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
+    var attendedOpen = items.filter(function (i) { return !isFinished(i) && (i.state === 'needs-you' || i.attended === true); }); // (item 167: paused ones too)
+    var needs = attendedOpen.length;
+    var needsPaused = attendedOpen.filter(function (i) { return i.state === 'paused'; }).length;
     var remaining = open.length;
     var words = remaining ? remaining + (remaining === 1 ? ' item' : ' items') + ' remaining' : 'Nothing remaining: the list is finished';
-    if (remaining && needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
+    if (remaining && needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer' + (needsPaused ? ', ' + needsPaused + (needsPaused === 1 ? ' of them' : ' of them') + ' paused' : '');
     if (remaining && blocked) words += ', ' + blocked + ' blocked';
     if (remaining && failedN) words += ', ' + failedN + ' failed';
     var pausedN = items.filter(function (i) { return i.state === 'paused'; }).length; // (item 124: dependents of a paused item are in the file as paused too)
@@ -1553,7 +1556,7 @@
       // (item 212: the item in play is a still, highlighted row in its topic, as well as in the top box)
       var st = STATES[i.state] || STATES.waiting;
       var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
-      var needsMark = i.state === 'needs-you' || !!why; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only)
+      var needsMark = i.state === 'needs-you' || !!why || i.attended === true; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only; item 167: and while it is paused)
       var li = el('li', st.cls + (i.state === 'working' ? ' is-working' : ''));
       var title = el('span', 'title');
       if (i.state === 'working') title.append(el('span', 'nowtag', 'Working now'));
@@ -1567,7 +1570,8 @@
         var nm = el('span', 'needsmark');
         nm.append(silhouette(), document.createTextNode('Needs you'));
         title.append(nm);
-        if (why && why.needs != null && String(why.needs)) title.append(el('span', 'what', String(why.needs)));
+        var needsWords = why && why.needs != null && String(why.needs) ? String(why.needs) : i.attended === true && i.needs ? String(i.needs) : '';
+        if (needsWords) title.append(el('span', 'what', needsWords));
       }
       if (i.state === 'failed') title.append(el('span', 'what', 'Failed: ' + (i.reason ? String(i.reason) : 'no reason given') + (i.branch ? ' (the work is on branch ' + String(i.branch) + ')' : '')));
       if (i.state === 'paused') {
