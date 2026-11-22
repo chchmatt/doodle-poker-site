@@ -130,7 +130,10 @@
   ul.items li.done .chip, ul.items li.done .num { color: var(--felt); }
   ul.items li.part .chip, ul.items li.part .num { color: var(--felt); }
   /* the item in play in the list */
-  .is-working { background: color-mix(in srgb, var(--marker) 12%, transparent); }
+  .is-working { background: color-mix(in srgb, var(--felt) 16%, transparent); outline: 2px solid var(--ink); outline-offset: -2px; border-radius: var(--wobble-small); animation: nowfade .5s ease-out; }
+  .is-working .nowtag { display: inline-block; margin-right: 8px; padding: 0 8px; font-size: 12px; font-weight: 700; color: var(--paper, #fff); background: var(--felt); border: 2px solid var(--ink); border-radius: var(--wobble-small); }
+  @keyframes nowfade { from { opacity: .3; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .is-working { animation: none; } }
   .is-working .chip, .is-working .num { color: var(--marker); }
   .is-working .title { font-weight: 600; }
   ul.tasks .when { color: var(--pencil); font-size: 13px; margin-left: 8px; white-space: nowrap; }
@@ -419,6 +422,13 @@
   }
 
   /* depLines:start */
+  /* Item 158: the order of "The list": the single item in play first, the rest exactly as given (no re-sort by state, number or size). */
+  function listOrder(open) {
+    var working = open.filter(function (i) { return i.state === 'working'; });
+    if (working.length !== 1) return open;
+    return working.concat(open.filter(function (i) { return i !== working[0]; }));
+  }
+
   /* Item 117: under an open item's title: "Waits for 199 ..., 201 ..." (each number with its title in the list; a number that is Done, or no longer in the list, is ticked; nothing when all are done), "Holds up 200, 202" (the open items that wait for this one, worked out from their `after`), "Queued by 199". */
   function depLines(it, lastOf, items) {
     var out = [];
@@ -493,7 +503,8 @@
     var items = [];
     (data.items || []).forEach(function (i) { if (i && !seenNo[i.number]) { seenNo[i.number] = true; items.push(lastOf[i.number]); } });
     var doneItems = items.filter(isFinished);
-    var open = items.filter(function (i) { return !isFinished(i); });
+    // (item 158: the item in play is always the first row; every other open item stays where TODO-NOW.md put it. Two items in play at once should not happen: then nothing moves.)
+    var open = listOrder(items.filter(function (i) { return !isFinished(i); }));
     var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
     var part = items.filter(function (i) { return i.state === 'part'; }).length;
 
@@ -581,7 +592,9 @@
     open.forEach(function (i) {
       var st = STATES[i.state] || STATES.waiting;
       var li = el('li', st.cls + (i.state === 'working' ? ' is-working' : ''));
-      var title = el('span', 'title', i.title);
+      var title = el('span', 'title');
+      if (i.state === 'working') title.append(el('span', 'nowtag', 'Working now'));
+      title.append(document.createTextNode(i.title));
       var when = '';
       if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
