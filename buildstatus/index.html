@@ -141,6 +141,11 @@
   /* item 126: the mark for an item that wants the player, the tappable numbers, and the highlights (told by an outline or underline as well as a tint) */
   .needsmark { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
   .dep { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+  /* (item 213) each topic group on a faint tint (two alternate, from the page's own colours, so light and dark both work), one solid line between any two groups (an open group closes with it under its last row; a shut one has it under its header) */
+  ul.items li.grp-a { background: color-mix(in srgb, var(--felt) 5%, transparent); }
+  ul.items li.grp-b { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  ul.items li.grp-last { border-bottom: 2px solid var(--rule); }
+  ul.items li.is-working { background: color-mix(in srgb, var(--felt) 16%, transparent); }
   ul.items li.hl-self { outline: 2px solid var(--ink); outline-offset: -2px; }
   ul.items li.hl-wait { background: color-mix(in srgb, var(--felt) 22%, transparent); outline: 2px dashed var(--felt); outline-offset: -2px; }
   ul.items li.hl-hold { background: color-mix(in srgb, var(--marker) 20%, transparent); outline: 2px dotted var(--marker); outline-offset: -2px; }
@@ -164,6 +169,7 @@
     .now-num[data-digits="6"] { font-size: 22px; }
     .now-title { font-size: 20px; }
     ul.items li { grid-template-columns: var(--numw, 2em) 1fr; }
+    ul.items li.topic-head .ctl { flex: 1 1 100%; } /* (item 213) the topic button at the right edge, level with the row buttons */
     ul.items .chip { grid-column: 2; justify-self: end; }
     ul.items li.has-grip { grid-template-columns: 44px var(--numw, 2em) 1fr; }
     ul.items li.has-grip .chip { grid-column: 3; justify-self: end; }
@@ -1370,12 +1376,16 @@
     } else {
       var groups = buildGroups(open, data.topics);
       topicGroupsNow = groups.filter(function (g) { return g.kind === 'topic'; });
-      groups.forEach(function (g) {
+      groups.forEach(function (g, gi) {
         var isOpen = groupIsOpen(g);
         var h = drawTopicHead(g, isOpen);
         headOf[g.key] = h;
+        var tint = ' grp-' + (gi % 2 ? 'b' : 'a');
+        h.className += tint;
         ul2.append(h);
-        if (isOpen) g.rows.forEach(function (i) { var r = drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
+        var lastEl = h;
+        if (isOpen) g.rows.forEach(function (i) { var r = drawRow(i); if (r) { r.className += tint; ul2.append(r); shownRows.push(i); lastEl = r; } });
+        if (isOpen) lastEl.className += ' grp-last'; // (the shut header already has the solid line)
       });
     }
     numWidth(ul2, shownRows);
