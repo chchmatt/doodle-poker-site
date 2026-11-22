@@ -195,6 +195,8 @@
   .ctl-state.refused { color: var(--redpen); cursor: pointer; }
   .ctl-note { font-size: 14px; color: var(--redpen); margin: 6px 0; }
   details.cancelled { margin-top: 14px; }
+  .cancelled-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin: 8px 0; }
+  .cancelled-more { margin: 8px 0; text-align: right; }
   details.cancelled summary { cursor: pointer; font-family: var(--hand); }
   ul.items li.cancelled { opacity: 0.85; }
   ul.items .what, ul.items .deps { display: block; font-size: 14px; font-weight: 400; color: var(--pencil); overflow-wrap: anywhere; }
@@ -276,7 +278,7 @@
   <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
   <p class="ctl-note" id="ctl-note" hidden></p>
   <ul class="items" id="items"></ul>
-  <details class="cancelled" id="cancelled" hidden><summary id="cancelled-head">Cancelled</summary><ul class="items" id="cancelled-list"></ul></details>
+  <details class="cancelled" id="cancelled" hidden><summary id="cancelled-head">Cancelled</summary><div class="cancelled-tools" id="cancelled-tools"></div><ul class="items" id="cancelled-list"></ul><div class="cancelled-more" id="cancelled-more"></div></details>
   </div>
 
   <div id="tab-backlog" hidden>
@@ -574,6 +576,8 @@
     if (kind === 'unpause') return { type: 'unpause', id: n };
     if (kind === 'cancel') return { type: 'cancel', id: n, why: 'Cancelled from the phone at ' + clock(new Date(atMs).toISOString()) };
     if (kind === 'restore') return { type: 'restore', id: n };
+    if (kind === 'discard') return { type: 'discard', id: n };
+    if (kind === 'discardall') return { type: 'discard-cancelled' };
     if (kind === 'letgo') return { type: 'release-held', id: n, n: extra };
     return null;
   }
@@ -687,7 +691,25 @@
     }
     li.append(box);
   }
-  /** The cancelled items, in a collapsed section under the list, each with Restore (one tap). */
+  /** The cancelled items, in a collapsed section under the list: the latest 5 (and "Show N older"), each with how long is left, Remove now (two taps) and Restore (one tap), and one Remove all cancelled (two taps) at the head (item 193). */
+  var CANCELLED_SHOWN = 5;
+  var cancelledMore = false;             // "Show N older" was pressed
+  var DAY_MS = 24 * 3600 * 1000;
+  /** In plain words, how long a cancelled item stays on the page before the controller removes it. */
+  function daysLeftWords(c, atIso, nowMs) {
+    var keep = c && typeof c.keepDays === 'number' && c.keepDays > 0 ? c.keepDays : 7;
+    var at = new Date(atIso).getTime();
+    if (!isFinite(at)) return '';
+    var left = Math.ceil((at + keep * DAY_MS - nowMs) / DAY_MS);
+    if (left <= 0) return 'Removed automatically soon';
+    return 'Removed automatically in ' + left + (left === 1 ? ' day' : ' days');
+  }
+  /** The latest first, and how many are shown. */
+  function cancelledView(list, more) {
+    var sorted = list.slice().sort(function (a, b) { return String(b.at || '').localeCompare(String(a.at || '')); });
+    var shown = more ? sorted : sorted.slice(0, CANCELLED_SHOWN);
+    return { shown: shown, older: sorted.length - shown.length };
+  }
   function drawCancelled() {
     var box = $('cancelled');
     var c = controllerOf(data);
@@ -695,14 +717,36 @@
     if (!inbox || !c || !list.length) { if (box) box.hidden = true; return; }
     box.hidden = false;
     $('cancelled-head').textContent = 'Cancelled (' + list.length + ')';
+    var nowMs = Date.now();
+    var live = c.mode === 'live';
+    // the head: what removing means, and Remove all cancelled
+    var tools = $('cancelled-tools');
+    tools.replaceChildren();
+    tools.append(el('span', 'what', 'Removing takes an item off the list for good; the controller keeps the record.'));
+    var allWords = pendingWords(pending.all, data, nowMs);
+    if (allWords && allWords.done && pending.all) {
+      if (!pending.all.doneAt) pending.all.doneAt = nowMs;
+      if (nowMs - pending.all.doneAt > DONE_SHOWN_MS) { delete pending.all; allWords = null; }
+    }
+    if (allWords) tools.append(el('span', 'ctl-state' + (allWords.sticky ? ' refused' : ''), allWords.text));
+    if (!(allWords && !allWords.done && !allWords.sticky && !allWords.late)) {
+      var armedAll = armed && armed.key === 'discardall:all' && nowMs < armed.until;
+      var all = el('button', 'ctl-btn' + (armedAll ? ' armed' : ''), armedAll ? 'Tap again to remove all' : 'Remove all cancelled');
+      all.type = 'button';
+      if (!live) all.disabled = true;
+      else all.addEventListener('click', function () { pressed('all', { kind: 'discardall', label: 'Remove all cancelled', two: true }); });
+      tools.append(all);
+    }
+    var view = cancelledView(list, cancelledMore);
     var ul = $('cancelled-list');
     ul.replaceChildren();
-    var nowMs = Date.now();
-    list.forEach(function (x) {
+    view.shown.forEach(function (x) {
       var li = el('li', 'cancelled');
       var title = el('span', 'title', x.title);
       var meta = [x.who ? 'by ' + x.who : '', x.at ? clock(x.at) : '', x.why ? x.why : ''].filter(Boolean).join(', ');
       if (meta) title.append(el('span', 'what', meta));
+      var left = daysLeftWords(c, x.at, nowMs);
+      if (left) title.append(el('span', 'what', left));
       var words = pendingWords(pending[x.number], data, nowMs);
       if (words && words.done && pending[x.number]) {
         if (!pending[x.number].doneAt) pending[x.number].doneAt = nowMs;
@@ -710,16 +754,33 @@
       }
       if (words) title.append(el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text));
       li.append(el('span', 'num', x.number), title);
-      if (!(words && !words.done && !words.sticky)) {
-        var btn = el('button', 'ctl-btn', 'Restore');
-        btn.type = 'button';
-        if (c.mode !== 'live') btn.disabled = true;
-        else btn.addEventListener('click', function () { sendCommand(x.number, 'restore'); });
-        li.append(btn);
+      if (!(words && !words.done && !words.sticky && !words.late)) {
+        var row = el('span', 'ctl-row');
+        var rest = el('button', 'ctl-btn', 'Restore');
+        rest.type = 'button';
+        if (!live) rest.disabled = true;
+        else rest.addEventListener('click', function () { sendCommand(x.number, 'restore'); });
+        var armedNow = armed && armed.key === 'discard:' + x.number && nowMs < armed.until;
+        var rm = el('button', 'ctl-btn' + (armedNow ? ' armed' : ''), armedNow ? 'Tap again to remove' : 'Remove now');
+        rm.type = 'button';
+        if (!live) rm.disabled = true;
+        else rm.addEventListener('click', function () { pressed(x.number, { kind: 'discard', label: 'Remove now', two: true }); });
+        row.append(rest, rm);
+        var ctlBox = el('span', 'ctl');
+        ctlBox.append(row);
+        li.append(ctlBox);
       }
       ul.append(li);
     });
-    numWidth(ul, list);
+    numWidth(ul, view.shown);
+    var more = $('cancelled-more');
+    more.replaceChildren();
+    if (view.older > 0) {
+      var showOlder = el('button', 'ctl-btn', 'Show ' + view.older + ' older');
+      showOlder.type = 'button';
+      showOlder.addEventListener('click', function () { cancelledMore = true; draw(); });
+      more.append(showOlder);
+    }
   }
   function drawControllerNote() {
     var n = $('ctl-note');
