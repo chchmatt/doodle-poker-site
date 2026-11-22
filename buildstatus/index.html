@@ -646,19 +646,13 @@
     if (c.mode !== 'live') return { note: 'The controls are switched off while the controller is not live.', buttons: btns, disabled: true };
     return { note: note, buttons: btns, disabled: false };
   }
-  /** What a row says about a command it sent, from the pending record and the snapshot's last results. */
+  /** What the page writes about a command it sent: ONLY a refusal (the controller's own words, or that it could not be sent), never "Sending", "Waiting" or "Done" (item 217). Null for everything else. */
   function pendingWords(p, d, nowMs) {
     if (!p) return null;
-    var results = d && Array.isArray(d.results) ? d.results : [];
-    var r = results.filter(function (x) { return x && x.id === p.id; })[0];
-    if (p.status === 'refused') return { text: 'Refused: ' + (p.reason || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true };
-    if (r) {
-      if (r.ok) return { text: 'Done', done: true, sticky: false };
-      return { text: 'Refused: ' + (r.why || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true, refusedByController: true };
-    }
-    if (p.status === 'sending') return { text: 'Sending…', done: false, sticky: false };
-    if (p.at && nowMs - p.at > WAIT_TOO_LONG_MS) return { text: 'Still waiting for your computer: is the controller running?', done: false, sticky: false, late: true };
-    return { text: 'Waiting for your computer', done: false, sticky: false };
+    var r = resultOf(p, d);
+    if (p.status === 'refused') return { text: (p.sendFailed ? 'Could not be sent: ' : 'Refused: ') + (p.reason || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true };
+    if (r && !r.ok) return { text: 'Refused: ' + (r.why || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true, refusedByController: true };
+    return null;
   }
   function controllerNote(d, nowMs) {
     var c = controllerOf(d);
@@ -666,23 +660,176 @@
     var seen = new Date(c.lastSeen).getTime();
     return nowMs - seen > CONTROLLER_QUIET_MS ? 'The controller was last seen at ' + clock(c.lastSeen) + ': commands wait until it is started' : '';
   }
-  function sendCommand(n, kind, extra) {
-    var id = newId();
-    var nowMs = Date.now();
-    var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
-    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra };
+  var SEND_FAILED = 'no connection, or the link is no longer valid';
+  /** Puts one command file into the inbox. A failure to send is the only thing written (the state goes back and the words stay). */
+  function postFile(key, id, file) {
     var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
     fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
       .then(function (r) {
         if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
-        if (pending[n] && pending[n].id === id) pending[n].status = 'waiting';
+        if (pending[key] && pending[key].id === id) pending[key].status = 'waiting';
         draw();
       })
       .catch(function () {
-        if (pending[n] && pending[n].id === id) { pending[n].status = 'refused'; pending[n].reason = 'the command could not be sent (no connection, or the link is no longer valid)'; }
+        if (pending[key] && pending[key].id === id) { pending[key].status = 'refused'; pending[key].sendFailed = true; pending[key].reason = SEND_FAILED; }
         draw();
       });
+  }
+  function sendCommand(n, kind, extra) {
+    var id = newId();
+    var nowMs = Date.now();
+    var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
+    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra }; // (a newer command on the same item replaces the older one)
+    postFile(n, id, file);
     draw();
+  }
+  // ---- every command is optimistic (item 217) ----
+  // The page draws what a command should have done at once, by laying the pending commands over the latest file at every redraw; it writes nothing while a command is on its way and nothing when it worked.
+  // It goes back to what the file says ONLY when the controller's answer for that command is a refusal, the command could not be sent, the file (after an ok answer) shows something other than what was expected, or no
+  // answer came within the wait (then the controller line at the top is the only word). A refusal is written in place with the controller's own words and stays until it is tapped away.
+  var rawData = null;                    // the file as it came; `data` is rawData with the pending commands laid over it
+  var OK_GRACE_MS = 20 * 1000;           // an ok answer whose change the file does not show yet keeps the expected state this long
+  var MOVE_GRACE_MS = 3 * 1000;          // a move that was answered ok keeps its dropped place this long (the file's own order takes over)
+  function resultOf(p, raw) {
+    return (raw && Array.isArray(raw.results) ? raw.results : []).filter(function (x) { return x && x.id === p.id; })[0] || null;
+  }
+  function cancelledHas(raw, n) { return (raw && Array.isArray(raw.cancelled) ? raw.cancelled : []).some(function (x) { return x && String(x.number) === String(n); }); }
+  function topicOf(raw, name) { return (raw && Array.isArray(raw.topics) ? raw.topics : []).filter(function (t) { return t && t.name === name; })[0] || null; }
+  function itemIn(raw, n) { return (raw && Array.isArray(raw.items) ? raw.items : []).filter(function (x) { return x && String(x.number) === String(n); })[0] || null; }
+  /** Does the file show what the command was expected to do? Moves are not judged here (the file's own order takes over after a short grace). */
+  function holds(p, raw, key) {
+    var q = queueEntry(raw, Number(key));
+    var it = itemIn(raw, key);
+    switch (p.kind) {
+      case 'pause': return !!(q && q.pause) || !!(it && it.state === 'paused');
+      case 'unpause': return !(q && q.pause);
+      case 'cancel': return cancelledHas(raw, key);
+      case 'restore': return !cancelledHas(raw, key);
+      case 'discard': return !cancelledHas(raw, key);
+      case 'discardall': return !(raw && Array.isArray(raw.cancelled) && raw.cancelled.length);
+      case 'letgo': return !(q && q.heldBy);
+      case 'pausetopic': { var tp = topicOf(raw, p.extra); return !!(tp && tp.paused); }
+      case 'unpausetopic': { var tu = topicOf(raw, p.extra); return !(tu && tu.paused); }
+      case 'changetopic': return !!(it && it.topic === p.extra);
+      default: return true;
+    }
+  }
+  /** Looked at before every drawing: a pending command is dropped when it has been answered and the file agrees, when the answer is no (kept as a refusal to write), or when nothing came in time. */
+  function settle(raw, nowMs) {
+    Object.keys(pending).forEach(function (key) {
+      var p = pending[key];
+      if (!p || p.status === 'refused') return;
+      var r = resultOf(p, raw);
+      if (r && !r.ok) { p.status = 'refused'; p.reason = r.why || 'no reason given'; return; } // (the controller said no: the state goes back and the words stay)
+      if (r && r.ok) {
+        if (!p.okAt) p.okAt = nowMs;
+        if (p.kind === 'move' || p.kind === 'movetopic') { if (nowMs - p.okAt > MOVE_GRACE_MS) delete pending[key]; return; }
+        if (holds(p, raw, key) || nowMs - p.okAt > OK_GRACE_MS) delete pending[key];
+        return;
+      }
+      if (p.at && nowMs - p.at > WAIT_TOO_LONG_MS) delete pending[key]; // (no word: the controller line at the top says when it was last seen)
+    });
+  }
+  /** The file with the pending commands laid over it: a copy; the file itself is never changed. */
+  function effective(raw, nowMs) {
+    var d = JSON.parse(JSON.stringify(raw));
+    if (!Array.isArray(d.items)) return d;
+    var stamp = new Date(nowMs).toISOString();
+    var q = Array.isArray(d.queue) ? d.queue : (d.queue = d.queue || []);
+    var cancelled = Array.isArray(d.cancelled) ? d.cancelled : (d.cancelled = []);
+    var qOf = function (n) { return q.filter(function (e) { return e && String(e.number) === String(n); })[0] || null; };
+    var itOf = function (n) { return d.items.filter(function (e) { return e && String(e.number) === String(n); })[0] || null; };
+    var keys = Object.keys(pending).filter(function (k) { var p = pending[k]; return p && p.status !== 'refused' && p.kind !== 'move' && p.kind !== 'movetopic'; });
+    keys.sort(function (a, b) { return (pending[a].at || 0) - (pending[b].at || 0); });
+    keys.forEach(function (key) {
+      var p = pending[key];
+      var n = Number(key);
+      var it = itOf(n);
+      var qe = qOf(n);
+      switch (p.kind) {
+        case 'pause':
+          if (it && !isFinished(it) && it.state !== 'working') { it.state = 'paused'; it.reason = 'Paused from the phone'; delete it.pausedFor; if (qe) qe.pause = 'Paused from the phone'; }
+          break;
+        case 'unpause':
+          if (it && it.state === 'paused') { it.state = it.attended === true ? 'needs-you' : 'waiting'; delete it.reason; delete it.pausedFor; }
+          if (qe) delete qe.pause;
+          break;
+        case 'cancel':
+          if (it && it.state !== 'working') {
+            d.items = d.items.filter(function (e) { return e !== it; });
+            d.queue = q.filter(function (e) { return e !== qe; });
+            q = d.queue;
+            cancelled.push({ number: it.number, title: it.title, who: 'page', at: stamp, why: 'Cancelled from the phone' });
+          }
+          break;
+        case 'restore': {
+          var c = cancelled.filter(function (e) { return e && String(e.number) === String(n); })[0];
+          if (c) {
+            d.cancelled = cancelled = cancelled.filter(function (e) { return e !== c; });
+            if (!it) d.items.push({ number: c.number, title: c.title, state: 'waiting', after: [] });
+          }
+          break;
+        }
+        case 'discard':
+          d.cancelled = cancelled = cancelled.filter(function (e) { return !(e && String(e.number) === String(n)); });
+          break;
+        case 'discardall':
+          d.cancelled = cancelled = [];
+          break;
+        case 'letgo':
+          if (qe) delete qe.heldBy;
+          if (it && Array.isArray(it.after)) it.after = it.after.filter(function (a) { return a !== p.extra; });
+          if (it && it.state === 'paused' && !(qe && qe.pause) && !it.pausedFor) { it.state = it.attended === true ? 'needs-you' : 'waiting'; delete it.reason; }
+          break;
+        case 'pausetopic':
+        case 'unpausetopic': {
+          var on = p.kind === 'pausetopic';
+          var t = topicOf(d, p.extra);
+          if (t) { if (on) t.paused = { who: 'page', at: stamp, why: 'Paused from the phone' }; else delete t.paused; }
+          q.forEach(function (e) { if (e && e.topic === p.extra) { if (on) e.topicPaused = true; else delete e.topicPaused; } });
+          d.items.forEach(function (e) {
+            if (!e || e.topic !== p.extra || isFinished(e)) return;
+            var e2 = qOf(e.number);
+            if (on && (e.state === 'waiting' || e.state === 'needs-you')) { e.state = 'paused'; e.reason = 'topic ' + p.extra + ' is paused'; }
+            if (!on && e.state === 'paused' && !(e2 && e2.pause) && !e.pausedFor) { e.state = e.attended === true ? 'needs-you' : 'waiting'; delete e.reason; }
+          });
+          break;
+        }
+        case 'changetopic':
+          if (it && it.state !== 'working') {
+            it.topic = p.extra;
+            if (qe) qe.topic = p.extra;
+            // (the end of the topic's block, in front of its tests row; a new topic starts a block at the end of the list)
+            d.items = d.items.filter(function (e) { return e !== it; });
+            var at = -1;
+            d.items.forEach(function (e, k) { var e2 = qOf(e.number); if (e.topic === p.extra && !isFinished(e)) { if (e2 && e2.tests) { if (at < 0 || at > k) at = k; } } });
+            if (at < 0) d.items.forEach(function (e, k) { if (e.topic === p.extra && !isFinished(e)) at = k + 1; });
+            if (at < 0) d.items.push(it); else d.items.splice(at, 0, it);
+          }
+          break;
+        default:
+          break;
+      }
+    });
+    return d;
+  }
+  /** The topic groups with a topic move that is still waiting shown where it was dropped. */
+  function withPendingTopicMoves(groups) {
+    var topics = groups.filter(function (g) { return g.kind === 'topic'; });
+    var changed = false;
+    Object.keys(pending).forEach(function (k) {
+      var p = pending[k];
+      if (!p || p.kind !== 'movetopic' || p.status === 'refused' || typeof p.spot !== 'number') return;
+      var name = k.slice(2);
+      var at = -1;
+      topics.forEach(function (g, x) { if (g.key === name) at = x; });
+      if (at < 0) return;
+      var g = topics.splice(at, 1)[0];
+      topics.splice(Math.min(p.spot, topics.length), 0, g);
+      changed = true;
+    });
+    if (!changed) return groups;
+    return groups.filter(function (g) { return g.kind === 'urgent'; }).concat(topics, groups.filter(function (g) { return g.kind === 'unsorted'; }));
   }
   // ---- the dialog (item 215): tap a row and it opens with the item's details, its buttons and its topic as chips; nothing destructive is one tap, because the dialog is the second step ----
   var dlg = null;                        // { kind: 'item', n } | { kind: 'topic', name } | { kind: 'all' }
@@ -708,17 +855,9 @@
   };
   /** What a command says in the dialog: the row's words, without the row's "tap to dismiss", and "Moved to ..." for a topic change. */
   function liveWords(key) {
-    var nowMs = Date.now();
-    var p = pending[key];
-    var words = pendingWords(p, data, nowMs);
-    if (words && words.done && p) {
-      if (!p.doneAt) p.doneAt = nowMs;
-      if (nowMs - p.doneAt > DONE_SHOWN_MS) { delete pending[key]; words = null; }
-    }
+    var words = pendingWords(pending[key], data, Date.now());
     if (!words) return null;
-    var text = words.text.replace(/ \(tap to dismiss\)$/, '');
-    if (words.done && p && p.kind === 'changetopic' && p.extra) text = 'Moved to ' + p.extra;
-    return { text: text, sticky: !!words.sticky, done: !!words.done, busy: !words.done && !words.sticky && !words.late };
+    return { text: words.text.replace(/ \(tap to dismiss\)$/, ''), sticky: true, done: false, busy: false };
   }
   function stateWord(i, q) {
     if (i.state === 'working') return 'Working';
@@ -812,7 +951,7 @@
       }
     }
     var words = liveWords(key);
-    if (words) { v.words = words; if (words.busy) v.buttons = []; }
+    if (words) v.words = words;
     return v;
   }
   function dlgFocusables(back) {
@@ -937,18 +1076,11 @@
   }
   /** The words under a row for a move it is waiting on (the buttons are in the dialog now, item 215). */
   function drawRowWords(i, li) {
-    var p = pending[i.number];
-    if (!p || p.kind !== 'move') return;
-    var nowMs = Date.now();
-    var words = pendingWords(p, data, nowMs);
-    if (words && words.done) {
-      if (!p.doneAt) p.doneAt = nowMs;
-      if (nowMs - p.doneAt > DONE_SHOWN_MS) { delete pending[i.number]; words = null; }
-    }
+    var words = pendingWords(pending[i.number], data, Date.now());
     if (!words) return;
     var box = el('span', 'ctl');
-    var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
-    if (words.sticky) w.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); delete pending[i.number]; draw(); });
+    var w = el('span', 'ctl-state refused', words.text);
+    w.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); delete pending[i.number]; draw(); });
     box.append(w);
     li.append(box);
   }
@@ -985,18 +1117,16 @@
     tools.replaceChildren();
     tools.append(el('span', 'what', 'Removing takes an item off the list for good; the controller keeps the record.'));
     var allWords = pendingWords(pending.all, data, nowMs);
-    if (allWords && allWords.done && pending.all) {
-      if (!pending.all.doneAt) pending.all.doneAt = nowMs;
-      if (nowMs - pending.all.doneAt > DONE_SHOWN_MS) { delete pending.all; allWords = null; }
+    if (allWords) {
+      var aw = el('span', 'ctl-state refused', allWords.text);
+      aw.addEventListener('click', function () { delete pending.all; draw(); });
+      tools.append(aw);
     }
-    if (allWords) tools.append(el('span', 'ctl-state' + (allWords.sticky ? ' refused' : ''), allWords.text));
-    if (!(allWords && !allWords.done && !allWords.sticky && !allWords.late)) {
-      var all = el('button', 'ctl-btn', 'Remove all cancelled');
-      all.type = 'button';
-      if (!live) all.disabled = true;
-      else all.addEventListener('click', function () { openDialog({ kind: 'all' }, all); });
-      tools.append(all);
-    }
+    var all = el('button', 'ctl-btn', 'Remove all cancelled');
+    all.type = 'button';
+    if (!live) all.disabled = true;
+    else all.addEventListener('click', function () { openDialog({ kind: 'all' }, all); });
+    tools.append(all);
     var view = cancelledView(list, cancelledMore);
     var ul = $('cancelled-list');
     ul.replaceChildren();
@@ -1093,17 +1223,7 @@
     if (spec.top) cmd.top = true; else if (spec.end) cmd.end = true; else cmd.before = spec.before;
     var file = commandFile(id, [cmd], nowMs);
     pending[n] = { id: id, kind: 'move', status: 'sending', reason: '', spot: spec.spot, at: nowMs };
-    var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
-    fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
-      .then(function (r) {
-        if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
-        if (pending[n] && pending[n].id === id) pending[n].status = 'waiting';
-        draw();
-      })
-      .catch(function () {
-        if (pending[n] && pending[n].id === id) { pending[n].status = 'refused'; pending[n].reason = 'the move could not be sent (no connection, or the link is no longer valid)'; }
-        draw();
-      });
+    postFile(n, id, file);
     draw();
   }
   function rowNumbers() { return itemsNow.map(function (x) { return x.number; }); }
@@ -1144,8 +1264,6 @@
   function gripFor(i) {
     var cs = controlsFor(i, data);
     if (!cs || i.state === 'working' || (cs.note && /Being built/.test(cs.note))) return null;
-    var p = pending[i.number];
-    if (p && p.kind !== 'move') return null;
     var g = el('button', 'grip', '≡');
     g.type = 'button';
     g.setAttribute('aria-label', 'Move item ' + i.number + ': drag to a new place');
@@ -1230,18 +1348,8 @@
     var cmd = { type: 'move-topic', topic: name };
     if (spec.after !== undefined) cmd.after = spec.after; else cmd.before = spec.before;
     var key = 't:' + name;
-    pending[key] = { id: id, kind: 'movetopic', status: 'sending', reason: '', at: nowMs };
-    var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
-    fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(commandFile(id, [cmd], nowMs)) })
-      .then(function (r) {
-        if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
-        if (pending[key] && pending[key].id === id) pending[key].status = 'waiting';
-        draw();
-      })
-      .catch(function () {
-        if (pending[key] && pending[key].id === id) { pending[key].status = 'refused'; pending[key].reason = 'the move could not be sent (no connection, or the link is no longer valid)'; }
-        draw();
-      });
+    pending[key] = { id: id, kind: 'movetopic', status: 'sending', reason: '', at: nowMs, spot: spec.spot };
+    postFile(key, id, commandFile(id, [cmd], nowMs));
     draw();
   }
   /** One header: the toggle, the counts, the bar, the Paused mark, and (with a token, for a topic) Pause topic / Unpause topic and the topic gripper. */
@@ -1289,27 +1397,20 @@
     if (controls) {
       var key = 't:' + g.key;
       var words = pendingWords(pending[key], data, nowMs);
-      if (words && words.done && pending[key]) {
-        if (!pending[key].doneAt) pending[key].doneAt = nowMs;
-        if (nowMs - pending[key].doneAt > DONE_SHOWN_MS) { delete pending[key]; words = null; }
-      }
       var box = el('span', 'ctl');
       if (words) {
-        var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
-        if (words.sticky) w.addEventListener('click', function () { delete pending[key]; draw(); });
+        var w = el('span', 'ctl-state refused', words.text);
+        w.addEventListener('click', function () { delete pending[key]; draw(); });
         box.append(w);
       }
       if (c.mode !== 'live') box.append(el('span', 'what', 'The controls are switched off while the controller is not live.'));
-      var clash = words && !words.done && !words.sticky && !words.late && !(pending[key] && pending[key].kind === 'movetopic');
-      if (!clash) {
-        var btn = el('button', 'ctl-btn', g.paused ? 'Unpause topic' : 'Pause topic');
-        btn.type = 'button';
-        if (c.mode !== 'live') btn.disabled = true;
-        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); openDialog({ kind: 'topic', name: g.key }, btn); }); // (item 215: a dialog first, never a bare send)
-        var row = el('span', 'ctl-row');
-        row.append(btn);
-        box.append(row);
-      }
+      var btn = el('button', 'ctl-btn', g.paused ? 'Unpause topic' : 'Pause topic');
+      btn.type = 'button';
+      if (c.mode !== 'live') btn.disabled = true;
+      else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); openDialog({ kind: 'topic', name: g.key }, btn); }); // (item 215: a dialog first, never a bare send)
+      var row = el('span', 'ctl-row');
+      row.append(btn);
+      box.append(row);
       li.append(box);
     }
     return li;
@@ -1432,6 +1533,9 @@
   }
 
   function draw() {
+    if (!rawData) return;
+    settle(rawData, Date.now());
+    data = effective(rawData, Date.now()); // (item 217: what the pending commands should have done, drawn at once)
     scale = data && typeof data.scale === 'number' && data.scale >= 0.2 && data.scale <= 1.5 ? data.scale : 1;
     if (!data) return;
     var nowMs = Date.now();
@@ -1605,7 +1709,7 @@
     if (!grouped) {
       open.forEach(function (i) { var r = i.state === 'working' ? null : drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
     } else {
-      var groups = buildGroups(open, data.topics);
+      var groups = withPendingTopicMoves(buildGroups(open, data.topics)); // (item 217: a topic that was dragged stays where it was dropped)
       topicGroupsNow = groups.filter(function (g) { return g.kind === 'topic'; });
       groups.forEach(function (g, gi) {
         var isOpen = groupIsOpen(g);
@@ -1796,7 +1900,7 @@
         build();
         $('page').hidden = false;
         $('failed').hidden = true;
-        if (!data || data.updatedAt !== j.updatedAt || data.watcherCheckedAt !== j.watcherCheckedAt) { data = j; draw(); }
+        if (!rawData || rawData.updatedAt !== j.updatedAt || rawData.watcherCheckedAt !== j.watcherCheckedAt) { rawData = j; draw(); }
         schedule(); // (how often to look again depends on whether everything is done)
       })
       .catch(function () {
