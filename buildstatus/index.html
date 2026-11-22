@@ -174,7 +174,14 @@
   .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
   /* under an item's title in the list: why it needs the player (item 121), what it waits for and holds up, and who queued it (item 117) */
   /* (item 173) the controls: 44 pixels high at least, no flashing */
-  .ctl { display: block; margin-top: 6px; }
+  .ctl { display: block; margin-top: 6px; grid-column: 1 / -1; }
+  /* (item 174) the gripper: only it starts a drag, so scrolling by touching a row still works */
+  ul.items li.has-grip { grid-template-columns: 44px var(--numw, 2.4em) 1fr auto; }
+  .grip { width: 44px; height: 44px; padding: 0; margin: -10px 0; font: 400 26px/1 var(--hand); color: var(--pencil); background: none; border: 0; cursor: grab; touch-action: none; user-select: none; }
+  .grip:disabled { opacity: 0.4; cursor: default; }
+  ul.items li.lifted { background: var(--grid); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+  ul.items li.drop-before { border-top: 4px solid var(--marker); }
+  ul.items li.drop-end { border-bottom: 4px solid var(--marker); }
   .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; }
   .ctl-btn { min-height: 44px; min-width: 44px; padding: 8px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
   .ctl-btn.armed { background: var(--marker); color: #fff; border-color: var(--marker); }
@@ -670,6 +677,8 @@
       });
       box.append(row);
     }
+    var mb = moveButtons(i); // (item 174)
+    if (mb) box.append(mb);
     li.append(box);
   }
   /** The cancelled items, in a collapsed section under the list, each with Restore (one tap). */
@@ -714,6 +723,148 @@
   }
   // (for the tests: the plain functions, in a page that was given somewhere to put them)
   if (typeof __bsExports === 'object' && __bsExports) __bsExports.ctl = { parseFragment: parseFragment, commandFile: commandFile, commandFor: commandFor, controlsFor: controlsFor, twoTap: twoTap, pendingWords: pendingWords, controllerNote: controllerNote };
+
+  // ---- reordering with a gripper (item 174) ----
+  // A small handle at the left of each row of The list (not the item being built, not the cancelled ones). ONLY the handle starts a drag (pointer events, touch and mouse), so scrolling by touching a row
+  // still works; the move that is sent is relative ("before the next row's item"), never a position, so a change the planner makes meanwhile cannot put it in the wrong place. The controller decides: it refuses
+  // a move above something the item waits for or below something that waits for it, and the row says why and goes back.
+  var GRIP_EDGE = 80;                    // the list scrolls itself within this many pixels of the top or bottom of the window
+  var GRIP_MAX_SCROLL = 18;              // ...at most this many pixels a step
+  var focusedGrip = null;                // the row whose Move up and Move down buttons are showing
+  var drag = null;                       // { n, rows: [numbers], rects: [{top, bottom}], target, scrollTimer }
+
+  /** The move that takes item `n` from where it is in `rows` (the numbers of the rows, in order) to the insertion index `target` (0 to rows.length, counted in the ORIGINAL list), or null when nothing changes. */
+  function moveFor(rows, n, target) {
+    var at = rows.indexOf(n);
+    if (at < 0 || target < 0 || target > rows.length) return null;
+    var p = target > at ? target - 1 : target; // (its place among the others once it is lifted out)
+    if (p === at) return null;
+    var rest = rows.filter(function (x) { return x !== n; });
+    if (p === 0) return { top: true, spot: 0 };
+    if (p >= rest.length) return { end: true, spot: rest.length };
+    return { before: rest[p], spot: p };
+  }
+  /** The insertion index for a pointer at height `y`: how many rows' middles are above it. */
+  function dropIndexAt(y, rects) {
+    var k = 0;
+    rects.forEach(function (r) { if ((r.top + r.bottom) / 2 < y) k += 1; });
+    return k;
+  }
+  /** How far the list scrolls for a pointer at height `y` in a window `height` high: up (negative) near the top, down (positive) near the bottom, 0 between. */
+  function autoScrollSpeed(y, height, edge, max) {
+    edge = edge || GRIP_EDGE; max = max || GRIP_MAX_SCROLL;
+    if (y < edge) return -Math.round(max * Math.min(1, (edge - y) / edge));
+    if (y > height - edge) return Math.round(max * Math.min(1, (y - (height - edge)) / edge));
+    return 0;
+  }
+  /** The rows as the page draws them, with a move that is still waiting shown where it was dropped. */
+  function withPendingMoves(list) {
+    var out = list.slice();
+    Object.keys(pending).forEach(function (k) {
+      var p = pending[k];
+      if (!p || p.kind !== 'move' || p.status === 'refused' || typeof p.spot !== 'number') return;
+      var said = (data && Array.isArray(data.results) ? data.results : []).filter(function (x) { return x && x.id === p.id; })[0];
+      if (said && !said.ok) return; // (the controller refused it: the row goes back where it was)
+      var at = -1;
+      out.forEach(function (it, x) { if (String(it.number) === k) at = x; });
+      if (at < 0) return;
+      var it = out.splice(at, 1)[0];
+      out.splice(Math.min(p.spot, out.length), 0, it);
+    });
+    return out;
+  }
+  function sendMove(n, spec) {
+    var id = newId();
+    var nowMs = Date.now();
+    var cmd = { type: 'move', id: n };
+    if (spec.top) cmd.top = true; else if (spec.end) cmd.end = true; else cmd.before = spec.before;
+    var file = commandFile(id, [cmd], nowMs);
+    pending[n] = { id: id, kind: 'move', status: 'sending', reason: '', spot: spec.spot };
+    var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
+    fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
+      .then(function (r) {
+        if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
+        if (pending[n] && pending[n].id === id) pending[n].status = 'waiting';
+        draw();
+      })
+      .catch(function () {
+        if (pending[n] && pending[n].id === id) { pending[n].status = 'refused'; pending[n].reason = 'the move could not be sent (no connection, or the link is no longer valid)'; }
+        draw();
+      });
+    draw();
+  }
+  function rowNumbers() { return itemsNow.map(function (x) { return x.number; }); }
+  function rectsOf() {
+    return rowNumbers().map(function (n) {
+      var r = rowOf[n] && rowOf[n].getBoundingClientRect ? rowOf[n].getBoundingClientRect() : { top: 0, bottom: 0 };
+      return { top: r.top, bottom: r.bottom };
+    });
+  }
+  function showDrop(target) {
+    var nums = rowNumbers();
+    nums.forEach(function (n, k) {
+      if (!rowOf[n]) return;
+      rowOf[n].className = rowOf[n].className.replace(/ ?drop-(before|end)/g, '');
+      if (drag && k === target && target < nums.length) rowOf[n].className += ' drop-before';
+      if (drag && target === nums.length && k === nums.length - 1) rowOf[n].className += ' drop-end';
+    });
+  }
+  function endDrag(send) {
+    if (!drag) return;
+    var d = drag;
+    drag = null;
+    if (d.scrollTimer) clearInterval(d.scrollTimer);
+    if (rowOf[d.n]) rowOf[d.n].className = rowOf[d.n].className.replace(/ ?lifted/g, '');
+    showDrop(-1);
+    if (!send) return;
+    var spec = moveFor(d.rows, d.n, d.target);
+    if (spec) sendMove(d.n, spec);
+  }
+  function gripFor(i) {
+    var cs = controlsFor(i, data);
+    if (!cs || i.state === 'working' || (cs.note && /Being built/.test(cs.note))) return null;
+    var p = pending[i.number];
+    if (p && p.kind !== 'move') return null;
+    var g = el('button', 'grip', '≡');
+    g.type = 'button';
+    g.setAttribute('aria-label', 'Move item ' + i.number + ': drag, or focus for Move up and Move down');
+    if (cs.disabled) { g.disabled = true; return g; }
+    g.addEventListener('pointerdown', function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var rects = rectsOf();
+      drag = { n: i.number, rows: rowNumbers(), rects: rects, target: rowNumbers().indexOf(i.number), scrollTimer: 0 };
+      if (rowOf[i.number]) rowOf[i.number].className += ' lifted';
+      showDrop(drag.target);
+    });
+    g.addEventListener('click', function () { focusedGrip = focusedGrip === i.number ? null : i.number; draw(); });
+    return g;
+  }
+  /** Move up and Move down, for the row whose handle was tapped or focused: the same move, one place. */
+  function moveButtons(i) {
+    if (focusedGrip !== i.number) return null;
+    var nums = rowNumbers();
+    var at = nums.indexOf(i.number);
+    var row = el('span', 'ctl-row');
+    [['Move up', at - 1, at > 0], ['Move down', at + 2, at < nums.length - 1]].forEach(function (b) {
+      var btn = el('button', 'ctl-btn', b[0]);
+      btn.type = 'button';
+      if (!b[2]) btn.disabled = true;
+      else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); var spec = moveFor(nums, i.number, b[1]); if (spec) sendMove(i.number, spec); });
+      row.append(btn);
+    });
+    return row;
+  }
+  document.addEventListener('pointermove', function (e) {
+    if (!drag || !e) return;
+    drag.target = dropIndexAt(e.clientY, drag.rects);
+    showDrop(drag.target);
+    var speed = autoScrollSpeed(e.clientY, (typeof window !== 'undefined' && window.innerHeight) || 800);
+    if (drag.scrollTimer) { clearInterval(drag.scrollTimer); drag.scrollTimer = 0; }
+    if (speed) drag.scrollTimer = setInterval(function () { if (typeof window !== 'undefined' && window.scrollBy) window.scrollBy(0, speed); }, 30);
+  });
+  document.addEventListener('pointerup', function () { endDrag(true); });
+  document.addEventListener('pointercancel', function () { endDrag(false); });
+  if (typeof __bsExports === 'object' && __bsExports) __bsExports.drag = { moveFor: moveFor, dropIndexAt: dropIndexAt, autoScrollSpeed: autoScrollSpeed };
 
   var tapped = null;   // {kind: 'num' | 'row', n}
   var hovered = null;
@@ -922,6 +1073,7 @@
     $('list-count').textContent = words;
     setBar($('list-bar'), remainingPercent(remaining), true);
 
+    open = withPendingMoves(open); // (item 174: a move that is still waiting shows where it was dropped)
     var ul2 = $('items');
     ul2.replaceChildren();
     rowOf = {};
@@ -952,6 +1104,8 @@
       }
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
       var numEl = el('span', 'num', i.number);
+      var grip = gripFor(i); // (item 174)
+      if (grip) { li.className += ' has-grip'; li.append(grip); }
       li.append(numEl, title, el('span', 'chip', chipWords(i, lastOf)));
       drawControls(i, li); // (item 173)
       rowOf[i.number] = li;
