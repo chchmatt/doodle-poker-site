@@ -279,6 +279,13 @@
     'waiting':  { cls: 'waiting', chip: 'Waiting' },
     'needs-you':{ cls: 'needs',   chip: 'Needs you' }
   };
+  /* The list's bar from the number of items remaining, and nothing else (item 123): none 100, one 90 (the last item is not finished until it is), N of two or more 100 over N. */
+  var LAST_ONE_PERCENT = 90;
+  function remainingPercent(n) {
+    if (n <= 0) return 100;
+    if (n === 1) return LAST_ONE_PERCENT;
+    return 100 / n;
+  }
   var isFinished = function (i) { return i.state === 'done' || i.state === 'part'; };
 
   /* ---------- the guess at a step's progress (0 to 1): the page moves it, the builder only says when it is done ---------- */
@@ -551,15 +558,16 @@
       $('guess').hidden = !has;
     }
 
-    // the count and the bar count ALL items (the finished ones too), so the progress never seems to go backwards
+    // the list's words and bar are for what is still REMAINING (item 123): the builder is always on the first of them, so with 10 left the bar is 10%, with 2 left 50%, and it is only full when nothing remains
     // (the "need you" count is the number of items whose state is needs-you; the reason each needs the player is shown under its title in the list)
     var needsYou = Array.isArray(data.needsYou) ? data.needsYou : [];
     var needs = items.filter(function (i) { return i.state === 'needs-you'; }).length;
-    var words = doneItems.length + ' of ' + items.length + ' done';
-    if (blocked) words += ', ' + blocked + ' blocked';
-    if (needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
+    var remaining = open.length;
+    var words = remaining ? remaining + (remaining === 1 ? ' item' : ' items') + ' remaining' : 'Nothing remaining: the list is finished';
+    if (remaining && needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
+    if (remaining && blocked) words += ', ' + blocked + ' blocked';
     $('list-count').textContent = words;
-    setBar($('list-bar'), items.length ? (doneItems.length / items.length) * 100 : 0, true);
+    setBar($('list-bar'), remainingPercent(remaining), true);
 
     var ul2 = $('items');
     ul2.replaceChildren();
