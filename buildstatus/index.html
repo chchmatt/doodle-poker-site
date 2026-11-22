@@ -173,6 +173,18 @@
   }
   .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
   /* under an item's title in the list: why it needs the player (item 121), what it waits for and holds up, and who queued it (item 117) */
+  /* (item 173) the controls: 44 pixels high at least, no flashing */
+  .ctl { display: block; margin-top: 6px; }
+  .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ctl-btn { min-height: 44px; min-width: 44px; padding: 8px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
+  .ctl-btn.armed { background: var(--marker); color: #fff; border-color: var(--marker); }
+  .ctl-btn:disabled { opacity: 0.45; cursor: default; }
+  .ctl-state { display: block; font-size: 14px; color: var(--pencil); margin: 4px 0; }
+  .ctl-state.refused { color: var(--redpen); cursor: pointer; }
+  .ctl-note { font-size: 14px; color: var(--redpen); margin: 6px 0; }
+  details.cancelled { margin-top: 14px; }
+  details.cancelled summary { cursor: pointer; font-family: var(--hand); }
+  ul.items li.cancelled { opacity: 0.85; }
   ul.items .what, ul.items .deps { display: block; font-size: 14px; font-weight: 400; color: var(--pencil); overflow-wrap: anywhere; }
   ul.items .deps .ok { color: var(--teal-ink, var(--pencil)); }
   ul.tasks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; font-size: 15px; }
@@ -250,7 +262,9 @@
   <h2>The list</h2>
   <div class="list-count" id="list-count"></div>
   <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+  <p class="ctl-note" id="ctl-note" hidden></p>
   <ul class="items" id="items"></ul>
+  <details class="cancelled" id="cancelled" hidden><summary id="cancelled-head">Cancelled</summary><ul class="items" id="cancelled-list"></ul></details>
   </div>
 
   <div id="tab-backlog" hidden>
@@ -296,7 +310,7 @@
   var gotGood = false;
   var scale = 1;                         // item 122: what the last 20 items took over what was guessed for them (the file's `scale`, 0.2 to 1.5); 1 when the file has none
   var shown = {};                        // the highest each bar has shown (a bar never goes backwards)
-  var name = location.hash.replace(/^#/, '');
+  var name = parseFragment(location.hash).name; // (item 173: the part after the name, &inbox=..., is the controller token)
   var $ = function (id) { return document.getElementById(id); };
   // the column for the item numbers is as wide as the longest number in its list (a minimum, never a fixed width), so the titles line up on every row and nothing wraps under a number
   var numWidth = function (ul, list) {
@@ -328,6 +342,7 @@
     'done':     { cls: 'done',    chip: 'Done' },
     'part':     { cls: 'part',    chip: 'Done in part' },
     'blocked':  { cls: 'blocked', chip: 'Blocked' },
+    'failed':   { cls: 'blocked', chip: 'Failed' },
     'working':  { cls: 'working', chip: 'Working' },
     'waiting':  { cls: 'waiting', chip: 'Waiting' },
     'needs-you':{ cls: 'needs',   chip: 'Needs you' },
@@ -458,7 +473,7 @@
   function betweenOf(now, lastOf) {
     if (data.between && data.between.at) return { text: String(data.between.text || ''), at: data.between.at };
     var cur = now ? lastOf[now.number] : null;
-    if (cur && (isFinished(cur) || cur.state === 'blocked')) return { text: 'Item ' + now.number + (cur.title ? ' (' + cur.title + ')' : '') + ' finished' + (cur.finishedAt ? ' at ' + clock(cur.finishedAt) : '') + '; the next item has not started yet', at: cur.finishedAt || null, own: true };
+    if (cur && (isFinished(cur) || cur.state === 'blocked' || cur.state === 'failed')) return { text: 'Item ' + now.number + (cur.title ? ' (' + cur.title + ')' : '') + ' finished' + (cur.finishedAt ? ' at ' + clock(cur.finishedAt) : '') + '; the next item has not started yet', at: cur.finishedAt || null, own: true };
     return null;
   }
   function betweenLine(b, nowMs) {
@@ -496,6 +511,210 @@
   }
 
   /* Item 126: hover or tap on a number or a row lights up what it waits for and holds up. A tap stays until a second tap on the same thing or a tap elsewhere; a hover goes with the mouse. */
+  // ---- the controls (item 173): pause, unpause, cancel and restore from the page ----
+  // The controller token (the write-only token of the command inbox, item 171) comes in the link's fragment (#<name>&inbox=<base64url of {u, s}>), is kept in localStorage under one key
+  // (in try and catch: if storage fails the controls work for this visit only) and is removed from the address. It is never shown, logged or sent anywhere but the inbox's own address.
+  // No token, or a snapshot from before the controller (no `controller` field): the page is the read-only page it always was.
+  var INBOX_KEY = 'dp-buildstatus-inbox';
+  var TWO_TAP_MS = 3000;                 // the second tap must come within this long
+  var DONE_SHOWN_MS = 3000;              // "Done" stays this long on a row
+  var CONTROLLER_QUIET_MS = 2 * 60 * 1000; // the controller has not been seen for this long: commands wait
+  var pending = {};                      // item number -> { id, kind, status: 'sending' | 'waiting' | 'done' | 'refused', reason, doneAt }
+  var armed = null;                      // { key, until }: a button waiting for its second tap
+
+  /** The part of the address after the #, split into the page's own name and the token (or null). */
+  function parseFragment(hash) {
+    var parts = String(hash || '').replace(/^#/, '').split('&');
+    var out = { name: parts[0], inbox: null };
+    parts.slice(1).forEach(function (p) {
+      if (p.indexOf('inbox=') !== 0 || typeof atob !== 'function') return;
+      try {
+        var raw = p.slice(6).replace(/-/g, '+').replace(/_/g, '/');
+        while (raw.length % 4) raw += '=';
+        var j = JSON.parse(atob(raw));
+        if (j && typeof j.u === 'string' && /^https:\/\//.test(j.u) && typeof j.s === 'string' && j.s) out.inbox = { u: j.u, s: j.s };
+      } catch (e) { /* (not a token: ignored) */ }
+    });
+    return out;
+  }
+  var inbox = null;
+  (function () {
+    var f = parseFragment(location.hash);
+    inbox = f.inbox;
+    if (inbox) {
+      try { localStorage.setItem(INBOX_KEY, JSON.stringify(inbox)); } catch (e) { /* (works for this visit only) */ }
+      try { history.replaceState(null, '', (location.pathname || '') + (location.search || '') + '#' + f.name); } catch (e) { /* (the address keeps it; nothing else is lost) */ }
+    } else {
+      try {
+        var s = JSON.parse(localStorage.getItem(INBOX_KEY) || 'null');
+        if (s && typeof s.u === 'string' && /^https:\/\//.test(s.u) && typeof s.s === 'string' && s.s) inbox = s;
+      } catch (e) { inbox = null; }
+    }
+  })();
+
+  var newId = function () { return 'page-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8); };
+  /** One command file, as the controller reads it. */
+  function commandFile(id, commands, atMs) { return { id: id, source: 'page', at: new Date(atMs).toISOString(), commands: commands }; }
+  /** The command a button sends. */
+  function commandFor(kind, n, extra, atMs) {
+    if (kind === 'pause') return { type: 'pause', id: n, why: 'Paused from the phone at ' + clock(new Date(atMs).toISOString()) };
+    if (kind === 'unpause') return { type: 'unpause', id: n };
+    if (kind === 'cancel') return { type: 'cancel', id: n, why: 'Cancelled from the phone at ' + clock(new Date(atMs).toISOString()) };
+    if (kind === 'restore') return { type: 'restore', id: n };
+    if (kind === 'letgo') return { type: 'release-held', id: n, n: extra };
+    return null;
+  }
+  /** What the controller is doing, from the snapshot: null when this snapshot has no controller fields (an old one). */
+  function controllerOf(d) { return d && d.controller && typeof d.controller === 'object' ? d.controller : null; }
+  function queueEntry(d, n) { return (d && Array.isArray(d.queue) ? d.queue : []).filter(function (q) { return q && q.number === n; })[0] || null; }
+  /** Which controls a row shows: { note, buttons: [{ kind, label, two }], disabled } or null for none. `i` is the item as the page has it. */
+  function controlsFor(i, d) {
+    var c = controllerOf(d);
+    if (!inbox || !c) return null;
+    if (i.state === 'working' || (d.now && d.now.number === i.number && d.state === 'working')) return { note: 'Being built: use the Stop shortcut', buttons: [], disabled: false };
+    var q = queueEntry(d, i.number);
+    var btns;
+    var note = null;
+    if (q && q.heldBy) {
+      note = 'Held: item ' + q.heldBy + ' was cancelled';
+      btns = [{ kind: 'letgo', label: 'Let it go', two: false, extra: q.heldBy }, { kind: 'cancel', label: 'Cancel it too', two: true }];
+    } else if (q && q.pause) {
+      btns = [{ kind: 'unpause', label: 'Unpause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
+    } else if (i.state === 'paused' && i.pausedFor) {
+      note = 'Paused because item ' + i.pausedFor + ' is: free that one';
+      btns = [{ kind: 'cancel', label: 'Cancel', two: true }];
+    } else {
+      btns = [{ kind: 'pause', label: 'Pause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
+    }
+    if (c.mode !== 'live') return { note: 'Controls are off until the cut-over', buttons: btns, disabled: true };
+    return { note: note, buttons: btns, disabled: false };
+  }
+  /** The two-tap rule: the first tap arms the button, the second within 3 seconds fires it. Returns { fire, armed }. */
+  function twoTap(state, key, nowMs) {
+    if (state && state.key === key && nowMs < state.until) return { fire: true, armed: null };
+    return { fire: false, armed: { key: key, until: nowMs + TWO_TAP_MS } };
+  }
+  /** What a row says about a command it sent, from the pending record and the snapshot's last results. */
+  function pendingWords(p, d, nowMs) {
+    if (!p) return null;
+    var results = d && Array.isArray(d.results) ? d.results : [];
+    var r = results.filter(function (x) { return x && x.id === p.id; })[0];
+    if (p.status === 'refused') return { text: 'Refused: ' + (p.reason || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true };
+    if (r) {
+      if (r.ok) return { text: 'Done', done: true, sticky: false };
+      return { text: 'Refused: ' + (r.why || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true, refusedByController: true };
+    }
+    if (p.status === 'sending') return { text: 'Sending…', done: false, sticky: false };
+    return { text: 'Waiting for your computer', done: false, sticky: false };
+  }
+  function controllerNote(d, nowMs) {
+    var c = controllerOf(d);
+    if (!inbox || !c || !c.lastSeen) return '';
+    var seen = new Date(c.lastSeen).getTime();
+    return nowMs - seen > CONTROLLER_QUIET_MS ? 'The controller was last seen at ' + clock(c.lastSeen) + ': commands wait until it is started' : '';
+  }
+  function sendCommand(n, kind, extra) {
+    var id = newId();
+    var nowMs = Date.now();
+    var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
+    pending[n] = { id: id, kind: kind, status: 'sending', reason: '' };
+    var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
+    fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
+      .then(function (r) {
+        if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
+        if (pending[n] && pending[n].id === id) pending[n].status = 'waiting';
+        draw();
+      })
+      .catch(function () {
+        if (pending[n] && pending[n].id === id) { pending[n].status = 'refused'; pending[n].reason = 'the command could not be sent (no connection, or the link is no longer valid)'; }
+        draw();
+      });
+    draw();
+  }
+  /** One tap on a button of row `n`. */
+  function pressed(n, b) {
+    var key = b.kind + ':' + n;
+    if (b.two) {
+      var t = twoTap(armed, key, Date.now());
+      armed = t.armed;
+      if (!t.fire) { draw(); setTimeout(function () { if (armed && armed.key === key) { armed = null; draw(); } }, TWO_TAP_MS + 50); return; }
+    }
+    sendCommand(n, b.kind, b.extra);
+  }
+  /** The buttons and the words under a row. */
+  function drawControls(i, li) {
+    var cs = controlsFor(i, data);
+    if (!cs) return;
+    var nowMs = Date.now();
+    var box = el('span', 'ctl');
+    if (cs.note) box.append(el('span', 'what', cs.note));
+    var words = pendingWords(pending[i.number], data, nowMs);
+    if (words && words.done && pending[i.number]) {
+      if (!pending[i.number].doneAt) pending[i.number].doneAt = nowMs;
+      if (nowMs - pending[i.number].doneAt > DONE_SHOWN_MS) { delete pending[i.number]; words = null; }
+    }
+    if (words) {
+      var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
+      if (words.sticky) w.addEventListener('click', function () { delete pending[i.number]; draw(); });
+      box.append(w);
+    }
+    if (cs.buttons.length && !(words && !words.done && !words.sticky)) {
+      var row = el('span', 'ctl-row');
+      cs.buttons.forEach(function (b) {
+        var isArmed = armed && armed.key === b.kind + ':' + i.number && nowMs < armed.until;
+        var btn = el('button', 'ctl-btn' + (isArmed ? ' armed' : ''), isArmed ? 'Tap again to ' + b.label.toLowerCase() : b.label);
+        btn.type = 'button';
+        if (cs.disabled) btn.disabled = true;
+        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); pressed(i.number, b); });
+        row.append(btn);
+      });
+      box.append(row);
+    }
+    li.append(box);
+  }
+  /** The cancelled items, in a collapsed section under the list, each with Restore (one tap). */
+  function drawCancelled() {
+    var box = $('cancelled');
+    var c = controllerOf(data);
+    var list = data && Array.isArray(data.cancelled) ? data.cancelled : [];
+    if (!inbox || !c || !list.length) { if (box) box.hidden = true; return; }
+    box.hidden = false;
+    $('cancelled-head').textContent = 'Cancelled (' + list.length + ')';
+    var ul = $('cancelled-list');
+    ul.replaceChildren();
+    var nowMs = Date.now();
+    list.forEach(function (x) {
+      var li = el('li', 'cancelled');
+      var title = el('span', 'title', x.title);
+      var meta = [x.who ? 'by ' + x.who : '', x.at ? clock(x.at) : '', x.why ? x.why : ''].filter(Boolean).join(', ');
+      if (meta) title.append(el('span', 'what', meta));
+      var words = pendingWords(pending[x.number], data, nowMs);
+      if (words && words.done && pending[x.number]) {
+        if (!pending[x.number].doneAt) pending[x.number].doneAt = nowMs;
+        if (nowMs - pending[x.number].doneAt > DONE_SHOWN_MS) { delete pending[x.number]; words = null; }
+      }
+      if (words) title.append(el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text));
+      li.append(el('span', 'num', x.number), title);
+      if (!(words && !words.done && !words.sticky)) {
+        var btn = el('button', 'ctl-btn', 'Restore');
+        btn.type = 'button';
+        if (c.mode !== 'live') btn.disabled = true;
+        else btn.addEventListener('click', function () { sendCommand(x.number, 'restore'); });
+        li.append(btn);
+      }
+      ul.append(li);
+    });
+    numWidth(ul, list);
+  }
+  function drawControllerNote() {
+    var n = $('ctl-note');
+    var text = controllerNote(data, Date.now());
+    n.hidden = !text;
+    n.textContent = text;
+  }
+  // (for the tests: the plain functions, in a page that was given somewhere to put them)
+  if (typeof __bsExports === 'object' && __bsExports) __bsExports.ctl = { parseFragment: parseFragment, commandFile: commandFile, commandFor: commandFor, controlsFor: controlsFor, twoTap: twoTap, pendingWords: pendingWords, controllerNote: controllerNote };
+
   var tapped = null;   // {kind: 'num' | 'row', n}
   var hovered = null;
   var rowOf = {};
@@ -620,6 +839,7 @@
     // (item 158: the item in play is always the first row; every other open item stays where TODO-NOW.md put it. Two items in play at once should not happen: then nothing moves.)
     var open = listOrder(items.filter(function (i) { return !isFinished(i); }));
     var blocked = items.filter(function (i) { return i.state === 'blocked'; }).length;
+    var failedN = items.filter(function (i) { return i.state === 'failed'; }).length;
     var part = items.filter(function (i) { return i.state === 'part'; }).length;
 
     between = finished || !now ? null : betweenOf(now, lastOf);
@@ -639,7 +859,7 @@
       $('now-end').hidden = true;
       var counts = $('counts');
       counts.hidden = false;
-      counts.textContent = (doneItems.length - part) + ' done, ' + part + ' done in part, ' + blocked + ' blocked' + (data.finishedAt ? ', at ' + clock(data.finishedAt) : '') + '.';
+      counts.textContent = (doneItems.length - part) + ' done, ' + part + ' done in part, ' + blocked + ' blocked' + (failedN ? ', ' + failedN + ' failed' : '') + (data.finishedAt ? ', at ' + clock(data.finishedAt) : '') + '.';
       $('tasks').replaceChildren();
       $('guess').hidden = true;
     } else if (between) {
@@ -696,6 +916,7 @@
     var words = remaining ? remaining + (remaining === 1 ? ' item' : ' items') + ' remaining' : 'Nothing remaining: the list is finished';
     if (remaining && needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
     if (remaining && blocked) words += ', ' + blocked + ' blocked';
+    if (remaining && failedN) words += ', ' + failedN + ' failed';
     var pausedN = items.filter(function (i) { return i.state === 'paused'; }).length; // (item 124: dependents of a paused item are in the file as paused too)
     if (remaining && pausedN) words += ', ' + pausedN + ' paused';
     $('list-count').textContent = words;
@@ -722,6 +943,7 @@
         title.append(nm);
         if (why && why.needs != null && String(why.needs)) title.append(el('span', 'what', String(why.needs)));
       }
+      if (i.state === 'failed') title.append(el('span', 'what', 'Failed: ' + (i.reason ? String(i.reason) : 'no reason given') + (i.branch ? ' (the work is on branch ' + String(i.branch) + ')' : '')));
       if (i.state === 'paused') {
         // (item 124: the reason the player gave, in words; an item held only because it waits for a paused one says which, and why that one is)
         var head = i.pausedFor ? lastOf[i.pausedFor] : null;
@@ -731,6 +953,7 @@
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
       var numEl = el('span', 'num', i.number);
       li.append(numEl, title, el('span', 'chip', chipWords(i, lastOf)));
+      drawControls(i, li); // (item 173)
       rowOf[i.number] = li;
       [numEl, title].forEach(function (part) {
         part.addEventListener('mouseenter', function () { hovered = { kind: 'row', n: i.number }; applyHighlights(); });
@@ -744,6 +967,8 @@
       ul2.append(li);
     });
     numWidth(ul2, open);
+    drawCancelled(); // (item 173)
+    drawControllerNote();
     itemsNow = open;
     applyHighlights(); // (the page redraws on every update: a tap still active is applied again to the new rows)
 
