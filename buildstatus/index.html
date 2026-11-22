@@ -143,6 +143,17 @@
   ul.items li.paused .chip { color: var(--pencil); border-style: dotted; }
   ul.items li.paused .chip::before { content: '‖ '; font-weight: 700; }
   ul.items li.paused .title { color: var(--pencil); }
+  /* the tabs (item 161): one row, never wrapped; on a narrow phone the row scrolls sideways */
+  nav.tabs { display: flex; gap: 6px; margin-top: 30px; overflow-x: auto; white-space: nowrap; border-bottom: 2px solid var(--ink); }
+  nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: none; border: 2px solid transparent; border-bottom: 0; border-radius: var(--wobble-small); padding: 6px 12px; cursor: pointer; flex: 0 0 auto; }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--paper); margin-bottom: -2px; }
+  nav.tabs button .n { margin-left: 6px; color: var(--felt); }
+  #tab-list > h2, #tab-backlog > h2, #tab-june > h2, #done-head { margin-top: 18px; }
+  h3.group { font: 400 17px/1.2 var(--hand); margin: 20px 0 4px; color: var(--pencil); }
+  ul.items.plain li { grid-template-columns: 1fr; }
+  ul.items.bl li { grid-template-columns: var(--numw, 2.4em) 1fr; }
+  ul.items.plain li .num { display: none; }
+  button.more { margin: 14px 0 0; font: 400 16px/1.2 var(--hand); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: var(--wobble-small); padding: 6px 16px; cursor: pointer; }
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
   @media (max-width: 520px) {
     .now-num { font-size: 44px; }
@@ -226,15 +237,33 @@
     <p class="guess" id="guess" hidden>The bars are a guess from how long each step usually takes. They move by themselves between updates and never reach full until the step is done.</p>
   </section>
 
+  <nav class="tabs" id="tabs" aria-label="Lists"></nav>
+
+  <div id="tab-list">
   <h2>The list</h2>
   <div class="list-count" id="list-count"></div>
   <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
   <ul class="items" id="items"></ul>
+  </div>
 
+  <div id="tab-backlog" hidden>
+    <h2>Backlog</h2>
+    <div id="backlog-body"></div>
+  </div>
+
+  <div id="tab-june" hidden>
+    <h2>June Backlog</h2>
+    <p class="list-count">Not before June 2027</p>
+    <ul class="items plain" id="june-items"></ul>
+  </div>
+
+  <div id="tab-done" hidden>
   <section id="done-part" hidden>
     <h2 id="done-head">Done</h2>
     <ul class="items finished" id="done-items"></ul>
+    <button type="button" class="more" id="done-more" hidden>Show 20 more</button>
   </section>
+  </div>
 
   <footer id="foot">This page reads one small file while it is in front. Leave it open.</footer>`;
   var built = false;
@@ -243,7 +272,16 @@
     built = true;
     var doc = new DOMParser().parseFromString('<body>' + MARKUP + '</body>', 'text/html');
     document.getElementById('page').append.apply(document.getElementById('page'), Array.prototype.slice.call(doc.body.childNodes));
+    var moreBtn = document.getElementById('done-more');
+    if (moreBtn) moreBtn.addEventListener('click', function () { doneShown += DONE_STEP; draw(); });
   }
+
+  var TABS = [['list', 'The list'], ['backlog', 'Backlog'], ['june', 'June Backlog'], ['done', 'Done']];
+  var TAB_KEY = 'dp-buildstatus-tab';
+  var DONE_STEP = 20;                    // the Done tab shows this many, and this many more each time the button is pressed (item 161)
+  var tab = (function () { try { var t = localStorage.getItem(TAB_KEY); return TABS.some(function (x) { return x[0] === t; }) ? t : 'list'; } catch (e) { return 'list'; } })();
+  var doneShown = DONE_STEP;
+  function chooseTab(t) { tab = t; try { localStorage.setItem(TAB_KEY, t); } catch (e) { /* (the choice is just not remembered) */ } draw(); }
 
   var data = null;
   var between = null;                    // the gap between two items (item 86): {text, at}, or null while an item is in play
@@ -616,16 +654,28 @@
     numWidth(ul2, open);
 
     // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
-    $('done-part').hidden = doneItems.length === 0;
+    // (item 161: from the permanent record's list when the file has it, with the finished items the file itself holds; the Done tab shows 20 and 20 more each time the button is pressed)
+    var byNo = {};
+    var all = [];
+    (Array.isArray(data.doneList) ? data.doneList : []).forEach(function (r) {
+      if (!r || byNo[r.number]) return;
+      var fin = r.finishedAt ? new Date(r.finishedAt).getTime() : NaN;
+      var rec = { number: r.number, title: r.title, state: r.result === 'part' ? 'part' : 'done', finishedAt: r.finishedAt };
+      if (!isNaN(fin) && typeof r.tookSec === 'number') rec.startedAt = new Date(fin - r.tookSec * 1000).toISOString();
+      byNo[r.number] = rec;
+      all.push(rec);
+    });
+    doneItems.forEach(function (i) { if (byNo[i.number]) all.splice(all.indexOf(byNo[i.number]), 1); byNo[i.number] = i; all.push(i); }); // (what the file itself holds is the newest word on an item)
+    var doneSorted = all.sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); });
+    // (item 160: N is every item the permanent record says is finished, when the file has it; never fewer than the finished items listed)
+    var doneAll = typeof data.doneTotal === 'number' && data.doneTotal >= 0 ? Math.max(Math.floor(data.doneTotal), doneSorted.length) : doneSorted.length;
+    var DONE_SHOWN = doneShown;
+    $('done-part').hidden = doneSorted.length === 0;
     var dl = $('done-items');
     dl.replaceChildren();
-    var doneSorted = doneItems.slice().sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); });
-    var DONE_SHOWN = 20; // (only the newest 20 are drawn; the count and the bar above still count every item)
-    // (item 160: N is every item the permanent record says is finished, when the file has it; never fewer than the finished items the file itself holds)
-    var doneAll = typeof data.doneTotal === 'number' && data.doneTotal >= 0 ? Math.max(Math.floor(data.doneTotal), doneSorted.length) : doneSorted.length;
-    $('done-head').textContent = doneAll > DONE_SHOWN ? 'Done: the last ' + DONE_SHOWN + ' of ' + doneAll : 'Done';
-    doneSorted = doneSorted.slice(0, DONE_SHOWN);
-    doneSorted.forEach(function (i) {
+    $('done-head').textContent = doneAll <= DONE_STEP ? 'Done' : DONE_SHOWN <= DONE_STEP ? 'Done: the last ' + DONE_STEP + ' of ' + doneAll : 'Showing ' + Math.min(DONE_SHOWN, doneSorted.length) + ' of ' + doneAll;
+    var shownRows = doneSorted.slice(0, DONE_SHOWN);
+    shownRows.forEach(function (i) {
       var st = STATES[i.state] || STATES.done;
       var li = el('li', st.cls);
       var title = el('span', 'title', i.title);
@@ -635,7 +685,51 @@
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
       dl.append(li);
     });
-    numWidth(dl, doneSorted);
+    numWidth(dl, shownRows);
+    var more = $('done-more');
+    more.hidden = doneSorted.length <= DONE_SHOWN;
+    more.textContent = 'Show ' + DONE_STEP + ' more';
+
+    // the two backlogs: titles only (item 161), read-only
+    var groups = data.backlog && Array.isArray(data.backlog.groups) ? data.backlog.groups : [];
+    var bl = $('backlog-body');
+    bl.replaceChildren();
+    var blCount = 0;
+    groups.forEach(function (g) {
+      if (!g || !Array.isArray(g.items) || !g.items.length) return;
+      bl.append(el('h3', 'group', g.heading));
+      var gl = el('ul', 'items bl');
+      g.items.forEach(function (e) {
+        blCount += 1;
+        var li = el('li', 'waiting');
+        li.append(el('span', 'num', e.number != null ? e.number : '•'), el('span', 'title', e.title));
+        gl.append(li);
+      });
+      numWidth(gl, g.items.map(function (e) { return { number: e.number != null ? e.number : '•' }; }));
+      bl.append(gl);
+    });
+    if (!blCount) bl.append(el('p', 'list-count', data.backlog ? 'Nothing in the backlog.' : 'The backlog is not in this file yet.'));
+    var june = Array.isArray(data.juneBacklog) ? data.juneBacklog : [];
+    var jl = $('june-items');
+    jl.replaceChildren();
+    june.forEach(function (e) { var li = el('li', 'waiting'); li.append(el('span', 'num', ''), el('span', 'title', e.title)); jl.append(li); });
+
+    // the tab row: one at a time, the chosen one remembered; counts beside the names
+    var counts = { list: null, backlog: data.backlog ? blCount : null, june: Array.isArray(data.juneBacklog) ? june.length : null, done: doneAll };
+    var tabsEl = $('tabs');
+    tabsEl.replaceChildren();
+    TABS.forEach(function (t) {
+      var b = el('button', null, t[1]);
+      b.setAttribute('type', 'button');
+      b.setAttribute('aria-selected', t[0] === tab ? 'true' : 'false');
+      if (counts[t[0]] !== null) b.append(el('span', 'n', counts[t[0]]));
+      b.addEventListener('click', function () { chooseTab(t[0]); });
+      tabsEl.append(b);
+    });
+    $('tab-list').hidden = tab !== 'list';
+    $('tab-backlog').hidden = tab !== 'backlog';
+    $('tab-june').hidden = tab !== 'june';
+    $('tab-done').hidden = tab !== 'done';
 
     clockParts();
   }
