@@ -531,6 +531,7 @@
   var TWO_TAP_MS = 3000;                 // the second tap must come within this long
   var DONE_SHOWN_MS = 3000;              // "Done" stays this long on a row
   var CONTROLLER_QUIET_MS = 2 * 60 * 1000; // the controller has not been seen for this long: commands wait
+  var WAIT_TOO_LONG_MS = 2 * 60 * 1000;  // a command still unanswered after this long no longer hides the row's buttons (item 190)
   var pending = {};                      // item number -> { id, kind, status: 'sending' | 'waiting' | 'done' | 'refused', reason, doneAt }
   var armed = null;                      // { key, until }: a button waiting for its second tap
 
@@ -617,6 +618,7 @@
       return { text: 'Refused: ' + (r.why || 'no reason given') + ' (tap to dismiss)', done: false, sticky: true, refusedByController: true };
     }
     if (p.status === 'sending') return { text: 'Sending…', done: false, sticky: false };
+    if (p.at && nowMs - p.at > WAIT_TOO_LONG_MS) return { text: 'Still waiting for your computer: is the controller running?', done: false, sticky: false, late: true };
     return { text: 'Waiting for your computer', done: false, sticky: false };
   }
   function controllerNote(d, nowMs) {
@@ -629,7 +631,7 @@
     var id = newId();
     var nowMs = Date.now();
     var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
-    pending[n] = { id: id, kind: kind, status: 'sending', reason: '' };
+    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs };
     var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
     fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
       .then(function (r) {
@@ -670,7 +672,8 @@
       if (words.sticky) w.addEventListener('click', function () { delete pending[i.number]; draw(); });
       box.append(w);
     }
-    if (cs.buttons.length && !(words && !words.done && !words.sticky)) {
+    var clash = words && !words.done && !words.sticky && !words.late && !(pending[i.number] && pending[i.number].kind === 'move'); // (item 190: a move does not stop the row's own buttons, and a command unanswered for 2 minutes never hides them)
+    if (cs.buttons.length && !clash) {
       var row = el('span', 'ctl-row');
       cs.buttons.forEach(function (b) {
         var isArmed = armed && armed.key === b.kind + ':' + i.number && nowMs < armed.until;
@@ -682,8 +685,6 @@
       });
       box.append(row);
     }
-    var mb = moveButtons(i); // (item 174)
-    if (mb) box.append(mb);
     li.append(box);
   }
   /** The cancelled items, in a collapsed section under the list, each with Restore (one tap). */
@@ -735,7 +736,6 @@
   // a move above something the item waits for or below something that waits for it, and the row says why and goes back.
   var GRIP_EDGE = 80;                    // the list scrolls itself within this many pixels of the top or bottom of the window
   var GRIP_MAX_SCROLL = 18;              // ...at most this many pixels a step
-  var focusedGrip = null;                // the row whose Move up and Move down buttons are showing
   var drag = null;                       // { n, rows: [numbers], rects: [{top, bottom}], target, scrollTimer }
 
   /** The move that takes item `n` from where it is in `rows` (the numbers of the rows, in order) to the insertion index `target` (0 to rows.length, counted in the ORIGINAL list), or null when nothing changes. */
@@ -784,7 +784,7 @@
     var cmd = { type: 'move', id: n };
     if (spec.top) cmd.top = true; else if (spec.end) cmd.end = true; else cmd.before = spec.before;
     var file = commandFile(id, [cmd], nowMs);
-    pending[n] = { id: id, kind: 'move', status: 'sending', reason: '', spot: spec.spot };
+    pending[n] = { id: id, kind: 'move', status: 'sending', reason: '', spot: spec.spot, at: nowMs };
     var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
     fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
       .then(function (r) {
@@ -832,7 +832,7 @@
     if (p && p.kind !== 'move') return null;
     var g = el('button', 'grip', '≡');
     g.type = 'button';
-    g.setAttribute('aria-label', 'Move item ' + i.number + ': drag, or focus for Move up and Move down');
+    g.setAttribute('aria-label', 'Move item ' + i.number + ': drag to a new place');
     if (cs.disabled) { g.disabled = true; return g; }
     g.addEventListener('pointerdown', function (e) {
       if (e && e.preventDefault) e.preventDefault();
@@ -841,23 +841,7 @@
       if (rowOf[i.number]) rowOf[i.number].className += ' lifted';
       showDrop(drag.target);
     });
-    g.addEventListener('click', function () { focusedGrip = focusedGrip === i.number ? null : i.number; draw(); });
     return g;
-  }
-  /** Move up and Move down, for the row whose handle was tapped or focused: the same move, one place. */
-  function moveButtons(i) {
-    if (focusedGrip !== i.number) return null;
-    var nums = rowNumbers();
-    var at = nums.indexOf(i.number);
-    var row = el('span', 'ctl-row');
-    [['Move up', at - 1, at > 0], ['Move down', at + 2, at < nums.length - 1]].forEach(function (b) {
-      var btn = el('button', 'ctl-btn', b[0]);
-      btn.type = 'button';
-      if (!b[2]) btn.disabled = true;
-      else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); var spec = moveFor(nums, i.number, b[1]); if (spec) sendMove(i.number, spec); });
-      row.append(btn);
-    });
-    return row;
   }
   document.addEventListener('pointermove', function (e) {
     if (!drag || !e) return;
