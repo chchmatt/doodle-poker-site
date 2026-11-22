@@ -136,6 +136,10 @@
   ul.tasks .when { color: var(--pencil); font-size: 13px; margin-left: 8px; white-space: nowrap; }
   ul.items li.blocked .chip, ul.items li.blocked .num { color: var(--redpen); }
   ul.items li.needs .chip { color: var(--ink); border-style: dashed; }
+  /* an item on hold (item 124): a pause mark and the word, in a plain muted look; never the look of an item in play */
+  ul.items li.paused .chip { color: var(--pencil); border-style: dotted; }
+  ul.items li.paused .chip::before { content: '‖ '; font-weight: 700; }
+  ul.items li.paused .title { color: var(--pencil); }
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
   @media (max-width: 520px) {
     .now-num { font-size: 44px; }
@@ -277,7 +281,8 @@
     'blocked':  { cls: 'blocked', chip: 'Blocked' },
     'working':  { cls: 'working', chip: 'Working' },
     'waiting':  { cls: 'waiting', chip: 'Waiting' },
-    'needs-you':{ cls: 'needs',   chip: 'Needs you' }
+    'needs-you':{ cls: 'needs',   chip: 'Needs you' },
+    'paused':   { cls: 'paused',  chip: 'Paused' }
   };
   /* The list's bar from the number of items remaining, and nothing else (item 123): none 100, one 90 (the last item is not finished until it is), N of two or more 100 over N. */
   var LAST_ONE_PERCENT = 90;
@@ -566,6 +571,8 @@
     var words = remaining ? remaining + (remaining === 1 ? ' item' : ' items') + ' remaining' : 'Nothing remaining: the list is finished';
     if (remaining && needs) words += ', ' + needs + ' need' + (needs === 1 ? 's' : '') + ' you at the computer';
     if (remaining && blocked) words += ', ' + blocked + ' blocked';
+    var pausedN = items.filter(function (i) { return i.state === 'paused'; }).length; // (item 124: dependents of a paused item are in the file as paused too)
+    if (remaining && pausedN) words += ', ' + pausedN + ' paused';
     $('list-count').textContent = words;
     setBar($('list-bar'), remainingPercent(remaining), true);
 
@@ -582,6 +589,12 @@
       if (i.state === 'needs-you') {
         var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
         if (why && why.needs != null && String(why.needs)) title.append(el('span', 'what', String(why.needs)));
+      }
+      if (i.state === 'paused') {
+        // (item 124: the reason the player gave, in words; an item held only because it waits for a paused one says which, and why that one is)
+        var head = i.pausedFor ? lastOf[i.pausedFor] : null;
+        var pw = i.pausedFor ? 'Paused because ' + i.pausedFor + ' is' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
+        title.append(el('span', 'what', pw));
       }
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
