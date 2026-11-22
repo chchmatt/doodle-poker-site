@@ -215,6 +215,8 @@
   .ctl-note { font-size: 14px; color: var(--redpen); margin: 6px 0; }
   /* (item 196) the topic headers of the grouped list */
   ul.items li.topic-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 2px 6px; margin-top: 12px; border-bottom: 2px solid var(--rule); }
+  /* (item 220) an OPEN group's header has only a dull underline of its own (the page's rule colour, much weaker), so the one bright line on the page always means "a new topic starts below" */
+  ul.items li.topic-head.grp-open { border-bottom: 1.5px solid color-mix(in srgb, var(--rule) 22%, transparent); }
   ul.items li.topic-head.paused { opacity: 0.8; }
   ul.items li.topic-head.drop-before { border-top: 4px solid var(--marker); }
   ul.items li.topic-head.drop-end { border-bottom: 4px solid var(--marker); }
@@ -1721,6 +1723,7 @@
         var lastEl = h;
         if (isOpen) g.rows.forEach(function (i) { var r = drawRow(i); if (r) { r.className += tint; ul2.append(r); shownRows.push(i); lastEl = r; } });
         if (isOpen) lastEl.className += ' grp-last'; // (the shut header already has the solid line)
+        if (isOpen && lastEl !== h) h.className += ' grp-open'; // (item 220: a dull underline; an open group with no row drawn keeps the solid line, its header is the whole group)
       });
     }
     numWidth(ul2, shownRows);
