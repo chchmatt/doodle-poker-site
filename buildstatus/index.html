@@ -194,6 +194,18 @@
   .ctl-state { display: block; font-size: 14px; color: var(--pencil); margin: 4px 0; }
   .ctl-state.refused { color: var(--redpen); cursor: pointer; }
   .ctl-note { font-size: 14px; color: var(--redpen); margin: 6px 0; }
+  /* (item 196) the topic headers of the grouped list */
+  ul.items li.topic-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 2px 6px; margin-top: 12px; border-bottom: 2px solid var(--rule); }
+  ul.items li.topic-head.paused { opacity: 0.8; }
+  ul.items li.topic-head.drop-before { border-top: 4px solid var(--marker); }
+  ul.items li.topic-head.drop-end { border-bottom: 4px solid var(--marker); }
+  ul.items li.topic-head.lifted { background: var(--grid); }
+  .topic-title { flex: 1 1 14em; min-width: 0; }
+  .topic-toggle { min-height: 44px; padding: 0 10px 0 0; font: 400 20px/1.2 var(--hand); color: var(--ink); background: none; border: 0; cursor: pointer; text-align: left; }
+  .topic-count { font-size: 14px; color: var(--pencil); margin-right: 8px; }
+  .tbar { display: inline-block; vertical-align: middle; width: 90px; height: 10px; border: 2px solid var(--rule); border-radius: var(--wobble-small); overflow: hidden; }
+  .tbar > i { display: block; height: 100%; background: var(--felt); }
+  ul.items li.topic-head .ctl { grid-column: auto; margin-top: 0; }
   details.cancelled { margin-top: 14px; }
   .cancelled-tools { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; margin: 8px 0; }
   .cancelled-more { margin: 8px 0; text-align: right; }
@@ -577,6 +589,8 @@
     if (kind === 'cancel') return { type: 'cancel', id: n, why: 'Cancelled from the phone at ' + clock(new Date(atMs).toISOString()) };
     if (kind === 'restore') return { type: 'restore', id: n };
     if (kind === 'discard') return { type: 'discard', id: n };
+    if (kind === 'pausetopic') return { type: 'pause-topic', topic: extra, why: 'Paused from the phone at ' + clock(new Date(atMs).toISOString()) };
+    if (kind === 'unpausetopic') return { type: 'unpause-topic', topic: extra };
     if (kind === 'discardall') return { type: 'discard-cancelled' };
     if (kind === 'letgo') return { type: 'release-held', id: n, n: extra };
     return null;
@@ -880,6 +894,14 @@
     var d = drag;
     drag = null;
     if (d.scrollTimer) clearInterval(d.scrollTimer);
+    if (d.kind === 'topic') {
+      if (headOf[d.n]) headOf[d.n].className = headOf[d.n].className.replace(/ ?lifted/g, '');
+      showDropTopic(-1);
+      if (!send) return;
+      var tspec = moveTopicFor(d.groups, d.n, d.target);
+      if (tspec) sendMoveTopic(d.n, tspec);
+      return;
+    }
     if (rowOf[d.n]) rowOf[d.n].className = rowOf[d.n].className.replace(/ ?lifted/g, '');
     showDrop(-1);
     if (!send) return;
@@ -907,7 +929,7 @@
   document.addEventListener('pointermove', function (e) {
     if (!drag || !e) return;
     drag.target = dropIndexAt(e.clientY, drag.rects);
-    showDrop(drag.target);
+    if (drag.kind === 'topic') showDropTopic(drag.target); else showDrop(drag.target);
     var speed = autoScrollSpeed(e.clientY, (typeof window !== 'undefined' && window.innerHeight) || 800);
     if (drag.scrollTimer) { clearInterval(drag.scrollTimer); drag.scrollTimer = 0; }
     if (speed) drag.scrollTimer = setInterval(function () { if (typeof window !== 'undefined' && window.scrollBy) window.scrollBy(0, speed); }, 30);
@@ -915,6 +937,165 @@
   document.addEventListener('pointerup', function () { endDrag(true); });
   document.addEventListener('pointercancel', function () { endDrag(false); });
   if (typeof __bsExports === 'object' && __bsExports) __bsExports.drag = { moveFor: moveFor, dropIndexAt: dropIndexAt, autoScrollSpeed: autoScrollSpeed };
+
+  // ---- the list grouped by topic (item 196) ----
+  // Each topic is a block under a header (its name, "N of M done", a thin bar, a Paused mark when the topic is paused) with the topic's tests row last; the block with the item being built is open and the
+  // others start closed (a tap on the header opens or closes one, and the choice is kept in the browser); `urgent` is a group at the very top and items with no topic are "Unsorted" at the end.
+  // A snapshot from before topics (none of the new fields) is drawn as the flat list it always was.
+  var TOPIC_OPEN_KEY = 'dp-buildstatus-topics';
+  var topicOpen = (function () { try { var o = JSON.parse(localStorage.getItem(TOPIC_OPEN_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } })();
+  function saveTopicOpen() { try { localStorage.setItem(TOPIC_OPEN_KEY, JSON.stringify(topicOpen)); } catch (e) { /* (the choice is just not remembered) */ } }
+  var topicGroupsNow = [];               // the topic groups as drawn, in order, for the topic drag
+
+  /**
+   * The open items in groups, in the order the page draws them: urgent, then the topics in the controller's order, then unsorted.
+   * `topics` is the snapshot's list ({ name, order, done, total, tests, paused }). Returns [{ key, name, kind: 'urgent' | 'topic' | 'unsorted', rows, done, total, paused, first, last }].
+   */
+  function buildGroups(open, topics) {
+    var byTopic = {};
+    var order = [];
+    var urgent = [];
+    var unsorted = [];
+    open.forEach(function (i) {
+      var t = i.topic || '';
+      if (t === 'urgent') { urgent.push(i); return; }
+      if (!t) { unsorted.push(i); return; }
+      if (!byTopic[t]) { byTopic[t] = []; order.push(t); }
+      byTopic[t].push(i);
+    });
+    var meta = {};
+    (Array.isArray(topics) ? topics : []).forEach(function (t) { if (t && t.name) meta[t.name] = t; });
+    order.sort(function (a, b) { return (meta[a] ? meta[a].order : 1e9) - (meta[b] ? meta[b].order : 1e9); });
+    var out = [];
+    if (urgent.length) out.push({ key: 'urgent', name: 'Urgent', kind: 'urgent', rows: urgent, done: 0, total: urgent.length, paused: null });
+    order.forEach(function (t) {
+      var m = meta[t] || {};
+      out.push({ key: t, name: t, kind: 'topic', rows: byTopic[t], done: typeof m.done === 'number' ? m.done : 0, total: typeof m.total === 'number' ? m.total : byTopic[t].length, paused: m.paused || null });
+    });
+    if (unsorted.length) out.push({ key: 'unsorted', name: 'Unsorted', kind: 'unsorted', rows: unsorted, done: 0, total: unsorted.length, paused: null });
+    out.forEach(function (g) { g.first = g.rows[0].number; g.last = g.rows[g.rows.length - 1].number; });
+    return out;
+  }
+  function groupIsOpen(g) {
+    if (Object.prototype.hasOwnProperty.call(topicOpen, g.key)) return !!topicOpen[g.key];
+    return g.kind === 'urgent' || g.rows.some(function (i) { return i.state === 'working'; });
+  }
+  /** The move of the whole block `name` to the insertion index `target` among the topic groups (0 to length, counted in the ORIGINAL order), as a relative move-topic, or null when nothing changes. */
+  function moveTopicFor(groups, name, target) {
+    var at = -1;
+    groups.forEach(function (g, k) { if (g.key === name) at = k; });
+    if (at < 0 || target < 0 || target > groups.length) return null;
+    var p = target > at ? target - 1 : target;
+    if (p === at) return null;
+    var rest = groups.filter(function (g) { return g.key !== name; });
+    if (p >= rest.length) return { after: rest[rest.length - 1].last, spot: p };
+    return { before: rest[p].first, spot: p };
+  }
+  function sendMoveTopic(name, spec) {
+    var id = newId();
+    var nowMs = Date.now();
+    var cmd = { type: 'move-topic', topic: name };
+    if (spec.after !== undefined) cmd.after = spec.after; else cmd.before = spec.before;
+    var key = 't:' + name;
+    pending[key] = { id: id, kind: 'movetopic', status: 'sending', reason: '', at: nowMs };
+    var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
+    fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(commandFile(id, [cmd], nowMs)) })
+      .then(function (r) {
+        if (r.status !== 201 && !r.ok) throw new Error('status ' + r.status);
+        if (pending[key] && pending[key].id === id) pending[key].status = 'waiting';
+        draw();
+      })
+      .catch(function () {
+        if (pending[key] && pending[key].id === id) { pending[key].status = 'refused'; pending[key].reason = 'the move could not be sent (no connection, or the link is no longer valid)'; }
+        draw();
+      });
+    draw();
+  }
+  /** One header: the toggle, the counts, the bar, the Paused mark, and (with a token, for a topic) Pause topic / Unpause topic and the topic gripper. */
+  function drawTopicHead(g, isOpen) {
+    var li = el('li', 'topic-head' + (g.paused ? ' paused' : ''));
+    var c = controllerOf(data);
+    var controls = !!inbox && !!c && g.kind === 'topic';
+    var nowMs = Date.now();
+    if (controls) {
+      var grip = el('button', 'grip', '≡');
+      grip.type = 'button';
+      grip.setAttribute('aria-label', 'Move the topic ' + g.name + ': drag to a new place');
+      if (c.mode !== 'live') grip.disabled = true;
+      else grip.addEventListener('pointerdown', function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        var heads = topicGroupsNow.map(function (x) { var h = headOf[x.key]; var r = h && h.getBoundingClientRect ? h.getBoundingClientRect() : { top: 0, bottom: 0 }; return { top: r.top, bottom: r.bottom }; });
+        var at = 0;
+        topicGroupsNow.forEach(function (x, k) { if (x.key === g.key) at = k; });
+        drag = { kind: 'topic', n: g.key, groups: topicGroupsNow.slice(), rects: heads, target: at, scrollTimer: 0 };
+        li.className += ' lifted';
+        showDropTopic(at);
+      });
+      li.append(grip);
+    }
+    var toggle = el('button', 'topic-toggle', (isOpen ? '▾ ' : '▸ ') + g.name);
+    toggle.type = 'button';
+    toggle.addEventListener('click', function () { topicOpen[g.key] = !isOpen; saveTopicOpen(); draw(); });
+    var head = el('span', 'topic-title');
+    head.append(toggle);
+    var counts = g.kind === 'topic' ? g.done + ' of ' + g.total + ' done' : g.rows.length + (g.rows.length === 1 ? ' item' : ' items');
+    head.append(el('span', 'topic-count', counts));
+    if (g.kind === 'topic' && g.total > 0) {
+      var bar = el('span', 'tbar thin');
+      var fill = el('i');
+      fill.style.width = Math.round(100 * g.done / g.total) + '%';
+      bar.append(fill);
+      head.append(bar);
+    }
+    if (g.paused) head.append(el('span', 'what', 'Paused' + (g.paused.who ? ' by ' + g.paused.who : '') + (g.paused.at ? ' at ' + clock(g.paused.at) : '') + (g.paused.why ? ': ' + g.paused.why : '')));
+    if (!isOpen) {
+      var next = g.rows.filter(function (i) { return i.state !== 'working' && !isTestsRow(i); })[0] || g.rows[0];
+      head.append(el('span', 'what', (g.rows.some(function (i) { return i.state === 'working'; }) ? 'Being built. ' : '') + 'Next: ' + next.title));
+    }
+    li.append(head);
+    if (controls) {
+      var key = 't:' + g.key;
+      var words = pendingWords(pending[key], data, nowMs);
+      if (words && words.done && pending[key]) {
+        if (!pending[key].doneAt) pending[key].doneAt = nowMs;
+        if (nowMs - pending[key].doneAt > DONE_SHOWN_MS) { delete pending[key]; words = null; }
+      }
+      var box = el('span', 'ctl');
+      if (words) {
+        var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
+        if (words.sticky) w.addEventListener('click', function () { delete pending[key]; draw(); });
+        box.append(w);
+      }
+      if (c.mode !== 'live') box.append(el('span', 'what', 'The controls are switched off while the controller is not live.'));
+      var clash = words && !words.done && !words.sticky && !words.late && !(pending[key] && pending[key].kind === 'movetopic');
+      if (!clash) {
+        var b = g.paused ? { kind: 'unpausetopic', label: 'Unpause topic', two: true, extra: g.key } : { kind: 'pausetopic', label: 'Pause topic', two: true, extra: g.key };
+        var isArmed = armed && armed.key === b.kind + ':' + key && nowMs < armed.until;
+        var btn = el('button', 'ctl-btn' + (isArmed ? ' armed' : ''), isArmed ? 'Tap again to ' + b.label.toLowerCase() : b.label);
+        btn.type = 'button';
+        if (c.mode !== 'live') btn.disabled = true;
+        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); pressed(key, b); });
+        var row = el('span', 'ctl-row');
+        row.append(btn);
+        box.append(row);
+      }
+      li.append(box);
+    }
+    return li;
+  }
+  var headOf = {};                       // topic key -> its header row, for the topic drag
+  function isTestsRow(i) { var q = queueEntry(data, i.number); return !!(q && q.tests); }
+  function showDropTopic(target) {
+    var groups = topicGroupsNow;
+    groups.forEach(function (g, k) {
+      var h = headOf[g.key];
+      if (!h) return;
+      h.className = h.className.replace(/ ?drop-(before|end)/g, '');
+      if (drag && drag.kind === 'topic' && k === target && target < groups.length) h.className += ' drop-before';
+      if (drag && drag.kind === 'topic' && target === groups.length && k === groups.length - 1) h.className += ' drop-end';
+    });
+  }
+  if (typeof __bsExports === 'object' && __bsExports) __bsExports.topics = { buildGroups: buildGroups, moveTopicFor: moveTopicFor, groupIsOpen: groupIsOpen };
 
   var tapped = null;   // {kind: 'num' | 'row', n}
   var hovered = null;
@@ -1127,14 +1308,15 @@
     var ul2 = $('items');
     ul2.replaceChildren();
     rowOf = {};
-    open.forEach(function (i) {
+    var drawRow = function (i) {
       var st = STATES[i.state] || STATES.waiting;
       var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
       var needsMark = i.state === 'needs-you' || !!why; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only)
       var li = el('li', st.cls + (i.state === 'working' ? ' is-working' : ''));
       var title = el('span', 'title');
       if (i.state === 'working') title.append(el('span', 'nowtag', 'Working now'));
-      title.append(document.createTextNode(i.title));
+      var qe = queueEntry(data, i.number); // (item 196: a topic's tests row reads "Tests: <topic>")
+      title.append(document.createTextNode(qe && qe.tests && qe.topic ? 'Tests: ' + qe.topic : i.title));
       var when = '';
       if (i.state === 'working' && i.startedAt) when = 'Started ' + clock(i.startedAt);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
@@ -1149,7 +1331,7 @@
       if (i.state === 'paused') {
         // (item 124: the reason the player gave, in words; an item held only because it waits for a paused one says which, and why that one is)
         var head = i.pausedFor ? lastOf[i.pausedFor] : null;
-        var pw = i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
+        var pw = qe && qe.topicPaused && !i.pausedFor && !(qe.pause) ? 'Paused with its topic' : i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
         title.append(el('span', 'what', pw));
       }
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
@@ -1168,12 +1350,29 @@
           applyHighlights();
         });
       });
-      ul2.append(li);
-    });
-    numWidth(ul2, open);
+      return li;
+    };
+    var shownRows = [];
+    topicGroupsNow = [];
+    headOf = {};
+    var grouped = Array.isArray(data.topics) && open.some(function (i) { return !!i.topic; });
+    if (!grouped) {
+      open.forEach(function (i) { ul2.append(drawRow(i)); shownRows.push(i); });
+    } else {
+      var groups = buildGroups(open, data.topics);
+      topicGroupsNow = groups.filter(function (g) { return g.kind === 'topic'; });
+      groups.forEach(function (g) {
+        var isOpen = groupIsOpen(g);
+        var h = drawTopicHead(g, isOpen);
+        headOf[g.key] = h;
+        ul2.append(h);
+        if (isOpen) g.rows.forEach(function (i) { ul2.append(drawRow(i)); shownRows.push(i); });
+      });
+    }
+    numWidth(ul2, shownRows);
     drawCancelled(); // (item 173)
     drawControllerNote();
-    itemsNow = open;
+    itemsNow = shownRows;
     applyHighlights(); // (the page redraws on every update: a tap still active is applied again to the new rows)
 
     // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
