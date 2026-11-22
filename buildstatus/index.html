@@ -1048,7 +1048,7 @@
     if (g.paused) head.append(el('span', 'what', 'Paused' + (g.paused.who ? ' by ' + g.paused.who : '') + (g.paused.at ? ' at ' + clock(g.paused.at) : '') + (g.paused.why ? ': ' + g.paused.why : '')));
     if (!isOpen) {
       var next = g.rows.filter(function (i) { return i.state !== 'working' && !isTestsRow(i); })[0] || g.rows[0];
-      head.append(el('span', 'what', (g.rows.some(function (i) { return i.state === 'working'; }) ? 'Being built. ' : '') + 'Next: ' + next.title));
+      head.append(el('span', 'what', (function () { var w = g.rows.filter(function (i) { return i.state === 'working'; })[0]; return w ? 'Being built: item ' + w.number + '. ' : ''; })() + 'Next: ' + next.title));
     }
     li.append(head);
     if (controls) {
@@ -1317,7 +1317,7 @@
     ul2.replaceChildren();
     rowOf = {};
     var drawRow = function (i) {
-      if (i.state === 'working') return null; // (item 165: the top box shows the item in play; the heading's count still includes it)
+      // (item 212: the item in play is a still, highlighted row in its topic, as well as in the top box)
       var st = STATES[i.state] || STATES.waiting;
       var why = needsYou.filter(function (n) { return n && String(n.number) === String(i.number); })[0]; // (item 121: from the matching needsYou entry, by number; nothing when there is none)
       var needsMark = i.state === 'needs-you' || !!why; // (item 126: it stays while the item is being built, and goes when it is done: this list holds open items only)
@@ -1366,7 +1366,7 @@
     headOf = {};
     var grouped = Array.isArray(data.topics) && open.some(function (i) { return !!i.topic; });
     if (!grouped) {
-      open.forEach(function (i) { var r = drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
+      open.forEach(function (i) { var r = i.state === 'working' ? null : drawRow(i); if (r) { ul2.append(r); shownRows.push(i); } });
     } else {
       var groups = buildGroups(open, data.topics);
       topicGroupsNow = groups.filter(function (g) { return g.kind === 'topic'; });
