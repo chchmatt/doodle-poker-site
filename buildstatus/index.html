@@ -170,11 +170,16 @@
     .now-title { font-size: 20px; }
     ul.items li { grid-template-columns: var(--numw, 2em) 1fr; }
     ul.items .chip { grid-column: 2; justify-self: start; }
+    ul.items li.has-grip { grid-template-columns: 44px var(--numw, 2em) 1fr; }
+    ul.items li.has-grip .chip { grid-column: 3; }
+    .ctl-btn { max-width: 100%; }
   }
   .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
   /* under an item's title in the list: why it needs the player (item 121), what it waits for and holds up, and who queued it (item 117) */
   /* (item 173) the controls: 44 pixels high at least, no flashing */
-  .ctl { display: block; margin-top: 6px; grid-column: 1 / -1; }
+  /* (item 187) the controls sit in the description column and end at its right edge, clear of the chip: the grid's own columns, never a typed offset (a row with a gripper has one more column) */
+  .ctl { display: block; margin-top: 6px; grid-column: 2; text-align: right; min-width: 0; }
+  ul.items li.has-grip .ctl { grid-column: 3; }
   /* (item 174) the gripper: only it starts a drag, so scrolling by touching a row still works */
   ul.items li.has-grip { grid-template-columns: 44px var(--numw, 2.4em) 1fr auto; }
   .grip { width: 44px; height: 44px; padding: 0; margin: -10px 0; font: 400 26px/1 var(--hand); color: var(--pencil); background: none; border: 0; cursor: grab; touch-action: none; user-select: none; }
@@ -182,7 +187,7 @@
   ul.items li.lifted { background: var(--grid); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
   ul.items li.drop-before { border-top: 4px solid var(--marker); }
   ul.items li.drop-end { border-bottom: 4px solid var(--marker); }
-  .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .ctl-btn { min-height: 44px; min-width: 44px; padding: 8px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
   .ctl-btn.armed { background: var(--marker); color: #fff; border-color: var(--marker); }
   .ctl-btn:disabled { opacity: 0.45; cursor: default; }
