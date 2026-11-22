@@ -190,7 +190,25 @@
   ul.items li.drop-end { border-bottom: 4px solid var(--marker); }
   .ctl-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .ctl-btn { min-height: 44px; min-width: 44px; padding: 8px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
-  .ctl-btn.armed { background: var(--marker); color: #fff; border-color: var(--marker); }
+  /* (item 215) the dialog that opens when a row is tapped: its details, its buttons, and the topic chips; the page's own variables, no animation */
+  ul.items li[role="button"] { cursor: pointer; }
+  .dlg-back { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 12px; background: color-mix(in srgb, var(--ink) 55%, transparent); }
+  .dlg-back[hidden] { display: none; }
+  .dlg { box-sizing: border-box; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; padding: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); }
+  .dlg h3 { margin: 0 0 6px; font: 400 22px/1.2 var(--hand); overflow-wrap: anywhere; }
+  .dlg .dlg-line { margin: 6px 0; font-size: 15px; overflow-wrap: anywhere; }
+  .dlg .dlg-help { margin: 4px 0 8px; font-size: 14px; color: var(--pencil); }
+  .dlg .dlg-state { display: inline-block; margin: 0 0 6px; padding: 1px 10px; font-size: 13px; font-weight: 600; border: 2px solid currentColor; border-radius: var(--wobble-small); color: var(--pencil); }
+  .dlg .dlg-words { margin: 8px 0; font-size: 15px; }
+  .dlg .dlg-words.refused { color: var(--redpen); }
+  .dlg .dlg-sect { margin: 12px 0 4px; font: 400 16px/1.2 var(--hand); }
+  .dlg .dlg-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dlg .dchip { min-height: 44px; min-width: 44px; padding: 6px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
+  .dlg .dchip.own { color: var(--card); background: var(--ink); border-color: var(--ink); }
+  .dlg .dchip:disabled { opacity: 0.45; cursor: default; }
+  .dlg .dlg-other { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .dlg .dlg-other input { flex: 1 1 160px; min-height: 44px; box-sizing: border-box; padding: 6px 10px; font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); }
+  .dlg .dlg-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .ctl-btn:disabled { opacity: 0.45; cursor: default; }
   .ctl-state { display: block; font-size: 14px; color: var(--pencil); margin: 4px 0; }
   .ctl-state.refused { color: var(--redpen); cursor: pointer; }
@@ -316,6 +334,8 @@
   </section>
   </div>
 
+  <div class="dlg-back" id="dlg" hidden></div>
+
   <footer id="foot">This page reads one small file while it is in front. Leave it open.</footer>`;
   var built = false;
   function build() {
@@ -324,6 +344,9 @@
     var doc = new DOMParser().parseFromString('<body>' + MARKUP + '</body>', 'text/html');
     document.getElementById('page').append.apply(document.getElementById('page'), Array.prototype.slice.call(doc.body.childNodes));
     document.addEventListener('click', function () { if (tapped) { tapped = null; applyHighlights(); } }); // (a tap elsewhere clears the highlight)
+    var dlgBack = document.getElementById('dlg');
+    if (dlgBack) dlgBack.addEventListener('click', closeDialog); // (a tap outside the dialog closes it)
+    document.addEventListener('keydown', dlgKey);
     var moreBtn = document.getElementById('done-more');
     if (moreBtn) moreBtn.addEventListener('click', function () { doneShown += DONE_STEP; draw(); });
   }
@@ -546,12 +569,10 @@
   // (in try and catch: if storage fails the controls work for this visit only) and is removed from the address. It is never shown, logged or sent anywhere but the inbox's own address.
   // No token, or a snapshot from before the controller (no `controller` field): the page is the read-only page it always was.
   var INBOX_KEY = 'dp-buildstatus-inbox';
-  var TWO_TAP_MS = 3000;                 // the second tap must come within this long
   var DONE_SHOWN_MS = 3000;              // "Done" stays this long on a row
   var CONTROLLER_QUIET_MS = 2 * 60 * 1000; // the controller has not been seen for this long: commands wait
   var WAIT_TOO_LONG_MS = 2 * 60 * 1000;  // a command still unanswered after this long no longer hides the row's buttons (item 190)
   var pending = {};                      // item number -> { id, kind, status: 'sending' | 'waiting' | 'done' | 'refused', reason, doneAt }
-  var armed = null;                      // { key, until }: a button waiting for its second tap
 
   /** The part of the address after the #, split into the page's own name and the token (or null). */
   function parseFragment(hash) {
@@ -597,6 +618,7 @@
     if (kind === 'unpausetopic') return { type: 'unpause-topic', topic: extra };
     if (kind === 'discardall') return { type: 'discard-cancelled' };
     if (kind === 'letgo') return { type: 'release-held', id: n, n: extra };
+    if (kind === 'changetopic') return { type: 'change-topic', id: n, topic: extra }; // (item 215, through item 214)
     return null;
   }
   /** What the controller is doing, from the snapshot: null when this snapshot has no controller fields (an old one). */
@@ -612,22 +634,17 @@
     var note = null;
     if (q && q.heldBy) {
       note = 'Held, because item ' + q.heldBy + ' was cancelled. "Let it go" stops it waiting for ' + q.heldBy + '.';
-      btns = [{ kind: 'letgo', label: 'Let it go', two: false, extra: q.heldBy }, { kind: 'cancel', label: 'Cancel it too', two: true }];
+      btns = [{ kind: 'letgo', label: 'Let it go', extra: q.heldBy }, { kind: 'cancel', label: 'Cancel it too' }];
     } else if (q && q.pause) {
-      btns = [{ kind: 'unpause', label: 'Unpause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
+      btns = [{ kind: 'unpause', label: 'Unpause' }, { kind: 'cancel', label: 'Cancel' }];
     } else if (i.state === 'paused' && i.pausedFor) {
       note = 'Paused because it waits for item ' + i.pausedFor + ', which is paused. Unpause ' + i.pausedFor + ' to release it.';
-      btns = [{ kind: 'cancel', label: 'Cancel', two: true }];
+      btns = [{ kind: 'cancel', label: 'Cancel' }];
     } else {
-      btns = [{ kind: 'pause', label: 'Pause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
+      btns = [{ kind: 'pause', label: 'Pause' }, { kind: 'cancel', label: 'Cancel' }];
     }
     if (c.mode !== 'live') return { note: 'The controls are switched off while the controller is not live.', buttons: btns, disabled: true };
     return { note: note, buttons: btns, disabled: false };
-  }
-  /** The two-tap rule: the first tap arms the button, the second within 3 seconds fires it. Returns { fire, armed }. */
-  function twoTap(state, key, nowMs) {
-    if (state && state.key === key && nowMs < state.until) return { fire: true, armed: null };
-    return { fire: false, armed: { key: key, until: nowMs + TWO_TAP_MS } };
   }
   /** What a row says about a command it sent, from the pending record and the snapshot's last results. */
   function pendingWords(p, d, nowMs) {
@@ -653,7 +670,7 @@
     var id = newId();
     var nowMs = Date.now();
     var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
-    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs };
+    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra };
     var url = inbox.u.replace(/\/+$/, '') + '/' + encodeURIComponent(id) + '.json?' + inbox.s;
     fetch(url, { method: 'PUT', headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': 'application/json', 'x-ms-version': '2022-11-02' }, body: JSON.stringify(file) })
       .then(function (r) {
@@ -667,49 +684,274 @@
       });
     draw();
   }
-  /** One tap on a button of row `n`. */
-  function pressed(n, b) {
-    var key = b.kind + ':' + n;
-    if (b.two) {
-      var t = twoTap(armed, key, Date.now());
-      armed = t.armed;
-      if (!t.fire) { draw(); setTimeout(function () { if (armed && armed.key === key) { armed = null; draw(); } }, TWO_TAP_MS + 50); return; }
-    }
-    sendCommand(n, b.kind, b.extra);
-  }
-  /** The buttons and the words under a row. */
-  function drawControls(i, li) {
-    var cs = controlsFor(i, data);
-    if (!cs) return;
+  // ---- the dialog (item 215): tap a row and it opens with the item's details, its buttons and its topic as chips; nothing destructive is one tap, because the dialog is the second step ----
+  var dlg = null;                        // { kind: 'item', n } | { kind: 'topic', name } | { kind: 'all' }
+  var dlgOther = false;                  // "Other..." was pressed: the text box shows
+  var dlgOtherMsg = '';                  // what is wrong with the typed topic, said in place
+  var dlgOtherText = '';
+  var dlgWantInput = false;              // put the cursor in the text box on the next draw
+  var dlgSig = '';                       // what the open dialog was last drawn from: it is drawn again only when this changes, so a half-typed topic survives the page's polling
+  var dlgReturn = null;                  // the row that had the focus: it gets it back on closing
+  var dlgCtx = { lastOf: {}, items: [], needsYou: [] };
+  var TOPIC_NAME = /^[a-z][a-z0-9 -]{0,39}$/;
+  var TOPIC_WORDS = 'A topic is lower-case words, at most 40 characters.';
+  var HELP = {
+    pause: 'Pause keeps the item from being built until it is unpaused.',
+    unpause: 'Unpause lets the item be built again.',
+    cancel: 'Cancel takes the item out of the queue; it can be restored for 7 days.',
+    restore: 'Restore puts the item back in the queue.',
+    discard: 'Removing takes the item off the list for good; the controller keeps the record.',
+    letgo: 'Let it go stops the item waiting for the cancelled item.',
+    pausetopic: 'Pause topic keeps every open item of this topic from being built until it is unpaused.',
+    unpausetopic: 'Unpause topic lets the items of this topic be built again.',
+    discardall: 'Removing takes the cancelled items off the list for good; the controller keeps the record.'
+  };
+  /** What a command says in the dialog: the row's words, without the row's "tap to dismiss", and "Moved to ..." for a topic change. */
+  function liveWords(key) {
     var nowMs = Date.now();
-    var box = el('span', 'ctl');
-    if (cs.note) box.append(el('span', 'what', cs.note));
-    var words = pendingWords(pending[i.number], data, nowMs);
-    if (words && words.done && pending[i.number]) {
-      if (!pending[i.number].doneAt) pending[i.number].doneAt = nowMs;
-      if (nowMs - pending[i.number].doneAt > DONE_SHOWN_MS) { delete pending[i.number]; words = null; }
+    var p = pending[key];
+    var words = pendingWords(p, data, nowMs);
+    if (words && words.done && p) {
+      if (!p.doneAt) p.doneAt = nowMs;
+      if (nowMs - p.doneAt > DONE_SHOWN_MS) { delete pending[key]; words = null; }
     }
-    if (words) {
-      var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
-      if (words.sticky) w.addEventListener('click', function () { delete pending[i.number]; draw(); });
-      box.append(w);
+    if (!words) return null;
+    var text = words.text.replace(/ \(tap to dismiss\)$/, '');
+    if (words.done && p && p.kind === 'changetopic' && p.extra) text = 'Moved to ' + p.extra;
+    return { text: text, sticky: !!words.sticky, done: !!words.done, busy: !words.done && !words.sticky && !words.late };
+  }
+  function stateWord(i, q) {
+    if (i.state === 'working') return 'Working';
+    if (q && q.heldBy) return 'Held';
+    if (i.state === 'needs-you') return 'Needs you';
+    if (i.state === 'paused') return 'Paused';
+    if (i.state === 'blocked' || i.state === 'failed') return (STATES[i.state] || {}).chip;
+    return 'Waiting';
+  }
+  function itemWords(n) {
+    var e = dlgCtx.lastOf[n];
+    if (!e || isFinished(e)) return n + ' (Done)';
+    return n + ' (' + stateWord(e, queueEntry(data, n)) + ')';
+  }
+  /** The dialog as plain data: what it says, which buttons and chips it has. Null when none is open. */
+  function dlgView() {
+    if (!dlg || !data) return null;
+    var c = controllerOf(data);
+    var live = !!inbox && !!c && c.mode === 'live';
+    var v = { title: '', state: '', lines: [], buttons: [], words: null, chips: null, chipNote: '', other: dlgOther, otherMsg: dlgOtherMsg };
+    var key = null;
+    var btn = function (kind, label, extra) { return { kind: kind, label: label, extra: extra, help: HELP[kind] || '', disabled: !live }; };
+    if (dlg.kind === 'topic') {
+      var g = topicGroupsNow.filter(function (x) { return x.key === dlg.name; })[0];
+      v.title = dlg.name;
+      v.state = g && g.paused ? 'Paused' : 'Running';
+      if (g) v.lines.push(g.done + ' of ' + g.total + ' done');
+      if (!live) v.lines.push('The controls are switched off while the controller is not live.');
+      v.buttons = [g && g.paused ? btn('unpausetopic', 'Unpause topic', dlg.name) : btn('pausetopic', 'Pause topic', dlg.name)];
+      key = 't:' + dlg.name;
+    } else if (dlg.kind === 'all') {
+      var list = Array.isArray(data.cancelled) ? data.cancelled : [];
+      v.title = 'Remove all cancelled';
+      v.lines.push('This removes ' + list.length + (list.length === 1 ? ' cancelled item' : ' cancelled items') + ' from the page.');
+      if (!live) v.lines.push('The controls are switched off while the controller is not live.');
+      v.buttons = list.length ? [btn('discardall', 'Remove all cancelled')] : [];
+      key = 'all';
+    } else {
+      var n = dlg.n;
+      key = n;
+      var i = dlgCtx.lastOf[n];
+      var x = (Array.isArray(data.cancelled) ? data.cancelled : []).filter(function (o) { return o && o.number === n; })[0];
+      if (i && !isFinished(i)) {
+        var q = queueEntry(data, n);
+        var why = dlgCtx.needsYou.filter(function (o) { return o && String(o.number) === String(n); })[0];
+        v.title = n + '. ' + i.title;
+        v.state = why && i.state !== 'needs-you' && i.state !== 'working' ? 'Needs you' : stateWord(i, q);
+        if (i.state === 'working' && i.startedAt) v.lines.push('Started ' + clock(i.startedAt));
+        if (i.note) v.lines.push(String(i.note));
+        if (i.state === 'paused') {
+          var ph = i.pausedFor ? dlgCtx.lastOf[i.pausedFor] : null;
+          v.lines.push(q && q.topicPaused && !i.pausedFor && !q.pause ? 'Paused with its topic' : i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (ph && ph.reason ? ': ' + ph.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given'));
+        }
+        if (i.state === 'failed') v.lines.push('Failed: ' + (i.reason ? String(i.reason) : 'no reason given') + (i.branch ? ' (the work is on branch ' + String(i.branch) + ')' : ''));
+        if (why && why.needs != null && String(why.needs)) v.lines.push('Needs you: ' + String(why.needs));
+        var after = (Array.isArray(i.after) ? i.after : []).filter(function (a) { return typeof a === 'number'; });
+        if (after.length) v.lines.push('Waits for item ' + after.map(itemWords).join(', '));
+        var holds = dlgCtx.items.filter(function (o) { return o !== i && !isFinished(o) && Array.isArray(o.after) && o.after.indexOf(n) >= 0; }).map(function (o) { return itemWords(o.number); });
+        if (holds.length) v.lines.push('Holds up item ' + holds.join(', '));
+        if (typeof i.queuedBy === 'number') v.lines.push('Queued by item ' + i.queuedBy);
+        if (i.size) v.lines.push('Size: ' + i.size + (typeof i.sizeMin === 'number' ? ', about ' + i.sizeMin + ' minutes' : ''));
+        var cs = controlsFor(i, data);
+        if (!cs) v.lines.push('The buttons need this page’s link with its key, and a controller that has written to it.');
+        else {
+          if (cs.note) v.lines.push(cs.note);
+          v.buttons = cs.buttons.map(function (b) { return btn(b.kind, b.label, b.extra); });
+          if (cs.disabled) v.buttons.forEach(function (b) { b.disabled = true; });
+        }
+        // the topic chips: the item's own first (marked), then every other topic on the page, then Other...
+        var names = (Array.isArray(data.topics) ? data.topics : []).map(function (t) { return t && t.name; }).filter(function (t) { return typeof t === 'string' && t && t !== 'urgent'; });
+        var own = i.topic && i.topic !== 'urgent' ? i.topic : '';
+        var order = (own ? [own] : []).concat(names.filter(function (t) { return t !== own; }));
+        var why2 = !inbox ? 'This page has no key to send commands with.' : !c ? 'The controller has not written to this page yet.' : c.mode !== 'live' ? 'The controls are switched off while the controller is not live.'
+          : i.state === 'working' ? 'The item being built cannot change topic.' : q && q.tests ? 'A tests item stays with its topic.' : i.topic === 'urgent' ? 'An urgent item has no topic to change.' : !i.topic ? 'This item has no topic yet.' : '';
+        v.chips = order.map(function (t) { return { name: t, own: t === own, disabled: !!why2 || t === own }; });
+        v.chips.push({ name: 'Other...', other: true, disabled: !!why2 });
+        v.chipNote = why2;
+      } else if (x) {
+        v.title = n + '. ' + x.title;
+        v.state = 'Cancelled';
+        var meta = [x.who ? 'by ' + x.who : '', x.at ? clock(x.at) : '', x.why ? x.why : ''].filter(Boolean).join(', ');
+        if (meta) v.lines.push('Cancelled ' + meta);
+        var left = c ? daysLeftWords(c, x.at, Date.now()) : '';
+        if (left) v.lines.push(left);
+        if (!live) v.lines.push('The controls are switched off while the controller is not live.');
+        v.buttons = [btn('restore', 'Restore'), btn('discard', 'Remove now')];
+      } else {
+        v.title = 'Item ' + n;
+        v.lines.push('This item is not on the page any more.');
+      }
     }
-    var clash = words && !words.done && !words.sticky && !words.late && !(pending[i.number] && pending[i.number].kind === 'move'); // (item 190: a move does not stop the row's own buttons, and a command unanswered for 2 minutes never hides them)
-    if (cs.buttons.length && !clash) {
-      var row = el('span', 'ctl-row');
-      cs.buttons.forEach(function (b) {
-        var isArmed = armed && armed.key === b.kind + ':' + i.number && nowMs < armed.until;
-        var btn = el('button', 'ctl-btn' + (isArmed ? ' armed' : ''), isArmed ? 'Tap again to ' + b.label.toLowerCase() : b.label);
-        btn.type = 'button';
-        if (cs.disabled) btn.disabled = true;
-        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); pressed(i.number, b); });
-        row.append(btn);
+    var words = liveWords(key);
+    if (words) { v.words = words; if (words.busy) v.buttons = []; }
+    return v;
+  }
+  function dlgFocusables(back) {
+    var out = [];
+    (function walk(e) { (e.kids || e.children || []).forEach(function (k) { if (k.tag === 'button' || k.tagName === 'BUTTON' || k.tag === 'input' || k.tagName === 'INPUT') { if (!k.disabled) out.push(k); } walk(k); }); })(back);
+    return out;
+  }
+  function openDialog(d, from) {
+    dlg = d;
+    dlgOther = false; dlgOtherMsg = ''; dlgOtherText = ''; dlgWantInput = false; dlgSig = '';
+    dlgReturn = from || null;
+    drawDialog();
+  }
+  function closeDialog() {
+    if (!dlg) return;
+    var key = dlg.kind === 'topic' ? 't:' + dlg.name : dlg.kind === 'all' ? 'all' : dlg.n;
+    var said = pending[key] ? pendingWords(pending[key], data, Date.now()) : null;
+    if (said && said.sticky) delete pending[key]; // (a refused word, the page's or the controller's, stays until the dialog is closed)
+    var back = dlgReturn;
+    dlg = null;
+    drawDialog();
+    if (back && typeof back.focus === 'function') back.focus();
+    dlgReturn = null;
+    draw();
+  }
+  function submitOther(n, raw) {
+    var t = String(raw || '').trim().toLowerCase();
+    dlgOtherText = String(raw || '');
+    if (!t) dlgOtherMsg = 'Type a topic name first.';
+    else if (t === 'urgent') dlgOtherMsg = 'Urgent is not a topic an item is moved into.';
+    else if (!TOPIC_NAME.test(t)) dlgOtherMsg = TOPIC_WORDS;
+    else {
+      dlgOtherMsg = ''; dlgOther = false; dlgOtherText = '';
+      sendCommand(n, 'changetopic', t);
+      return;
+    }
+    dlgWantInput = true;
+    drawDialog();
+  }
+  function drawDialog() {
+    var back = $('dlg');
+    if (!back) return;
+    var v = dlgView();
+    if (!v) { if (!back.hidden || dlgSig) { back.hidden = true; back.replaceChildren(); dlgSig = ''; } return; }
+    var sig = JSON.stringify(v);
+    if (sig === dlgSig && !back.hidden) return;
+    var wasHidden = back.hidden;
+    dlgSig = sig;
+    back.hidden = false;
+    var box = el('div', 'dlg');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', v.title);
+    box.append(el('h3', null, v.title));
+    if (v.state) box.append(el('span', 'dlg-state', v.state));
+    v.lines.forEach(function (t) { box.append(el('p', 'dlg-line', t)); });
+    if (v.words) box.append(el('p', 'dlg-words' + (v.words.sticky ? ' refused' : ''), v.words.text));
+    var key = dlg.kind === 'topic' ? 't:' + dlg.name : dlg.kind === 'all' ? 'all' : dlg.n;
+    var acts = el('div', 'dlg-actions');
+    v.buttons.forEach(function (b) {
+      if (b.help) box.append(el('p', 'dlg-help', b.help));
+      var bt = el('button', 'ctl-btn', b.label);
+      bt.type = 'button';
+      if (b.disabled) bt.disabled = true;
+      else bt.addEventListener('click', function () { sendCommand(key, b.kind, b.extra); });
+      acts.append(bt);
+    });
+    var inp = null;
+    if (v.chips) {
+      box.append(el('p', 'dlg-sect', 'Topic'));
+      var chips = el('div', 'dlg-chips');
+      v.chips.forEach(function (ch) {
+        var cb = el('button', 'dchip' + (ch.own ? ' own' : ''), ch.name);
+        cb.type = 'button';
+        if (ch.own) cb.setAttribute('aria-pressed', 'true');
+        if (ch.disabled) cb.disabled = true;
+        else if (ch.other) cb.addEventListener('click', function () { dlgOther = true; dlgWantInput = true; dlgOtherMsg = ''; drawDialog(); });
+        else cb.addEventListener('click', function () { sendCommand(dlg.n, 'changetopic', ch.name); });
+        chips.append(cb);
       });
-      box.append(row);
+      box.append(chips);
+      if (v.chipNote) box.append(el('p', 'dlg-help', v.chipNote));
+      if (v.other) {
+        var row = el('div', 'dlg-other');
+        inp = el('input');
+        inp.type = 'text';
+        inp.value = dlgOtherText;
+        inp.setAttribute('aria-label', 'New topic name');
+        inp.setAttribute('maxlength', '60');
+        inp.addEventListener('input', function () { dlgOtherText = inp.value; });
+        inp.addEventListener('keydown', function (e) { if (e && e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); submitOther(dlg.n, inp.value); } });
+        var mv = el('button', 'ctl-btn', 'Move');
+        mv.type = 'button';
+        mv.addEventListener('click', function () { submitOther(dlg.n, inp.value); });
+        row.append(inp, mv);
+        box.append(row);
+        if (v.otherMsg) box.append(el('p', 'dlg-words refused', v.otherMsg));
+      }
     }
+    var close = el('button', 'ctl-btn', 'Close');
+    close.type = 'button';
+    close.addEventListener('click', closeDialog);
+    acts.append(close);
+    box.append(acts);
+    box.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); });
+    back.replaceChildren(box);
+    if ((wasHidden || dlgWantInput) && typeof (inp || close).focus === 'function') { (dlgWantInput && inp ? inp : close).focus(); dlgWantInput = false; }
+  }
+  /** Escape closes; Tab stays inside the dialog. */
+  function dlgKey(e) {
+    if (!dlg || !e) return;
+    if (e.key === 'Escape') { if (e.preventDefault) e.preventDefault(); closeDialog(); return; }
+    if (e.key !== 'Tab') return;
+    var back = $('dlg');
+    var f = dlgFocusables(back);
+    if (!f.length) { if (e.preventDefault) e.preventDefault(); return; }
+    var cur = document.activeElement;
+    var at = f.indexOf(cur);
+    var next = at < 0 ? (e.shiftKey ? f.length - 1 : 0) : e.shiftKey ? (at === 0 ? f.length - 1 : at - 1) : (at === f.length - 1 ? 0 : at + 1);
+    if (e.preventDefault) e.preventDefault();
+    if (typeof f[next].focus === 'function') f[next].focus();
+  }
+  /** The words under a row for a move it is waiting on (the buttons are in the dialog now, item 215). */
+  function drawRowWords(i, li) {
+    var p = pending[i.number];
+    if (!p || p.kind !== 'move') return;
+    var nowMs = Date.now();
+    var words = pendingWords(p, data, nowMs);
+    if (words && words.done) {
+      if (!p.doneAt) p.doneAt = nowMs;
+      if (nowMs - p.doneAt > DONE_SHOWN_MS) { delete pending[i.number]; words = null; }
+    }
+    if (!words) return;
+    var box = el('span', 'ctl');
+    var w = el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text);
+    if (words.sticky) w.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); delete pending[i.number]; draw(); });
+    box.append(w);
     li.append(box);
   }
-  /** The cancelled items, in a collapsed section under the list: the latest 5 (and "Show N older"), each with how long is left, Remove now (two taps) and Restore (one tap), and one Remove all cancelled (two taps) at the head (item 193). */
+  /** The cancelled items, in a collapsed section under the list: the latest 5 (and "Show N older"), each with how long is left; tapping one opens its dialog (Restore, Remove now), and Remove all cancelled at the head opens one too (items 193 and 215). */
   var CANCELLED_SHOWN = 5;
   var cancelledMore = false;             // "Show N older" was pressed
   var DAY_MS = 24 * 3600 * 1000;
@@ -748,11 +990,10 @@
     }
     if (allWords) tools.append(el('span', 'ctl-state' + (allWords.sticky ? ' refused' : ''), allWords.text));
     if (!(allWords && !allWords.done && !allWords.sticky && !allWords.late)) {
-      var armedAll = armed && armed.key === 'discardall:all' && nowMs < armed.until;
-      var all = el('button', 'ctl-btn' + (armedAll ? ' armed' : ''), armedAll ? 'Tap again to remove all' : 'Remove all cancelled');
+      var all = el('button', 'ctl-btn', 'Remove all cancelled');
       all.type = 'button';
       if (!live) all.disabled = true;
-      else all.addEventListener('click', function () { pressed('all', { kind: 'discardall', label: 'Remove all cancelled', two: true }); });
+      else all.addEventListener('click', function () { openDialog({ kind: 'all' }, all); });
       tools.append(all);
     }
     var view = cancelledView(list, cancelledMore);
@@ -770,24 +1011,11 @@
         if (!pending[x.number].doneAt) pending[x.number].doneAt = nowMs;
         if (nowMs - pending[x.number].doneAt > DONE_SHOWN_MS) { delete pending[x.number]; words = null; }
       }
-      if (words) title.append(el('span', 'ctl-state' + (words.sticky ? ' refused' : ''), words.text));
       li.append(el('span', 'num', x.number), title);
-      if (!(words && !words.done && !words.sticky && !words.late)) {
-        var row = el('span', 'ctl-row');
-        var rest = el('button', 'ctl-btn', 'Restore');
-        rest.type = 'button';
-        if (!live) rest.disabled = true;
-        else rest.addEventListener('click', function () { sendCommand(x.number, 'restore'); });
-        var armedNow = armed && armed.key === 'discard:' + x.number && nowMs < armed.until;
-        var rm = el('button', 'ctl-btn' + (armedNow ? ' armed' : ''), armedNow ? 'Tap again to remove' : 'Remove now');
-        rm.type = 'button';
-        if (!live) rm.disabled = true;
-        else rm.addEventListener('click', function () { pressed(x.number, { kind: 'discard', label: 'Remove now', two: true }); });
-        row.append(rest, rm);
-        var ctlBox = el('span', 'ctl');
-        ctlBox.append(row);
-        li.append(ctlBox);
-      }
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('role', 'button');
+      li.addEventListener('click', function () { openDialog({ kind: 'item', n: x.number }, li); });
+      li.addEventListener('keydown', function (e) { if (e && (e.key === 'Enter' || e.key === ' ')) { if (e.preventDefault) e.preventDefault(); openDialog({ kind: 'item', n: x.number }, li); } });
       ul.append(li);
     });
     numWidth(ul, view.shown);
@@ -807,7 +1035,7 @@
     n.textContent = text;
   }
   // (for the tests: the plain functions, in a page that was given somewhere to put them)
-  if (typeof __bsExports === 'object' && __bsExports) __bsExports.ctl = { parseFragment: parseFragment, commandFile: commandFile, commandFor: commandFor, controlsFor: controlsFor, twoTap: twoTap, pendingWords: pendingWords, controllerNote: controllerNote };
+  if (typeof __bsExports === 'object' && __bsExports) __bsExports.ctl = { parseFragment: parseFragment, commandFile: commandFile, commandFor: commandFor, controlsFor: controlsFor, pendingWords: pendingWords, controllerNote: controllerNote };
 
   // ---- reordering with a gripper (item 174) ----
   // A small handle at the left of each row of The list (not the item being built, not the cancelled ones). ONLY the handle starts a drag (pointer events, touch and mouse), so scrolling by touching a row
@@ -1073,12 +1301,10 @@
       if (c.mode !== 'live') box.append(el('span', 'what', 'The controls are switched off while the controller is not live.'));
       var clash = words && !words.done && !words.sticky && !words.late && !(pending[key] && pending[key].kind === 'movetopic');
       if (!clash) {
-        var b = g.paused ? { kind: 'unpausetopic', label: 'Unpause topic', two: true, extra: g.key } : { kind: 'pausetopic', label: 'Pause topic', two: true, extra: g.key };
-        var isArmed = armed && armed.key === b.kind + ':' + key && nowMs < armed.until;
-        var btn = el('button', 'ctl-btn' + (isArmed ? ' armed' : ''), isArmed ? 'Tap again to ' + b.label.toLowerCase() : b.label);
+        var btn = el('button', 'ctl-btn', g.paused ? 'Unpause topic' : 'Pause topic');
         btn.type = 'button';
         if (c.mode !== 'live') btn.disabled = true;
-        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); pressed(key, b); });
+        else btn.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); openDialog({ kind: 'topic', name: g.key }, btn); }); // (item 215: a dialog first, never a bare send)
         var row = el('span', 'ctl-row');
         row.append(btn);
         box.append(row);
@@ -1101,7 +1327,7 @@
   }
   if (typeof __bsExports === 'object' && __bsExports) __bsExports.topics = { buildGroups: buildGroups, moveTopicFor: moveTopicFor, groupIsOpen: groupIsOpen };
 
-  var tapped = null;   // {kind: 'num' | 'row', n}
+  var tapped = null;   // {kind: 'num', n}: a tapped number in the top box or a Waits for line (a tapped row opens the dialog since item 215)
   var hovered = null;
   var rowOf = {};
   var itemsNow = [];
@@ -1318,6 +1544,7 @@
     $('list-count').textContent = words;
     setBar($('list-bar'), remainingPercent(remaining), true);
 
+    dlgCtx = { lastOf: lastOf, items: items, needsYou: needsYou };
     open = withPendingMoves(open); // (item 174: a move that is still waiting shows where it was dropped)
     var ul2 = $('items');
     ul2.replaceChildren();
@@ -1354,17 +1581,17 @@
       var grip = gripFor(i); // (item 174)
       if (grip) { li.className += ' has-grip'; li.append(grip); }
       li.append(numEl, title, el('span', 'chip', chipWords(i, lastOf)));
-      drawControls(i, li); // (item 173)
+      drawRowWords(i, li); // (item 173; the buttons are in the dialog since item 215)
       rowOf[i.number] = li;
       [numEl, title].forEach(function (part) {
         part.addEventListener('mouseenter', function () { hovered = { kind: 'row', n: i.number }; applyHighlights(); });
         part.addEventListener('mouseleave', function () { hovered = null; applyHighlights(); });
-        part.addEventListener('click', function (e) {
-          if (e && e.stopPropagation) e.stopPropagation();
-          tapped = tapped && tapped.kind === 'row' && tapped.n === i.number ? null : { kind: 'row', n: i.number };
-          applyHighlights();
-        });
       });
+      // (item 215: a tap opens the dialog; the highlight of what it waits for and holds up stays for a mouse's hover)
+      li.setAttribute('tabindex', '0');
+      li.setAttribute('role', 'button');
+      li.addEventListener('click', function (e) { if (e && e.target && /(^| )grip( |$)/.test(e.target.className || '')) return; openDialog({ kind: 'item', n: i.number }, li); }); // (the gripper only drags: a click that lands on it opens nothing)
+      li.addEventListener('keydown', function (e) { if (e && (e.key === 'Enter' || e.key === ' ')) { if (e.preventDefault) e.preventDefault(); openDialog({ kind: 'item', n: i.number }, li); } });
       return li;
     };
     var shownRows = [];
@@ -1393,6 +1620,7 @@
     drawControllerNote();
     itemsNow = shownRows;
     applyHighlights(); // (the page redraws on every update: a tap still active is applied again to the new rows)
+    drawDialog(); // (item 215: the open dialog follows the new data)
 
     // the finished items, newest first, each with when it started and how long it took (not crossed out: the dimmer colour and the chip say it is finished)
     // (item 161: from the permanent record's list when the file has it, with the finished items the file itself holds; the Done tab shows 20 and 20 more each time the button is pressed)
