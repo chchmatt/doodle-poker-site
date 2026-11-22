@@ -608,7 +608,9 @@
     dl.replaceChildren();
     var doneSorted = doneItems.slice().sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); });
     var DONE_SHOWN = 20; // (only the newest 20 are drawn; the count and the bar above still count every item)
-    $('done-head').textContent = doneSorted.length > DONE_SHOWN ? 'Done: the last ' + DONE_SHOWN + ' of ' + doneSorted.length : 'Done';
+    // (item 160: N is every item the permanent record says is finished, when the file has it; never fewer than the finished items the file itself holds)
+    var doneAll = typeof data.doneTotal === 'number' && data.doneTotal >= 0 ? Math.max(Math.floor(data.doneTotal), doneSorted.length) : doneSorted.length;
+    $('done-head').textContent = doneAll > DONE_SHOWN ? 'Done: the last ' + DONE_SHOWN + ' of ' + doneAll : 'Done';
     doneSorted = doneSorted.slice(0, DONE_SHOWN);
     doneSorted.forEach(function (i) {
       var st = STATES[i.state] || STATES.done;
