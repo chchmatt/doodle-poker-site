@@ -584,22 +584,22 @@
   function controlsFor(i, d) {
     var c = controllerOf(d);
     if (!inbox || !c) return null;
-    if (i.state === 'working' || (d.now && d.now.number === i.number && d.state === 'working')) return { note: 'Being built: use the Stop shortcut', buttons: [], disabled: false };
+    if (i.state === 'working' || (d.now && d.now.number === i.number && d.state === 'working')) return { note: 'Being built now. To stop it, use the Stop shortcut.', buttons: [], disabled: false };
     var q = queueEntry(d, i.number);
     var btns;
     var note = null;
     if (q && q.heldBy) {
-      note = 'Held: item ' + q.heldBy + ' was cancelled';
+      note = 'Held, because item ' + q.heldBy + ' was cancelled. "Let it go" stops it waiting for ' + q.heldBy + '.';
       btns = [{ kind: 'letgo', label: 'Let it go', two: false, extra: q.heldBy }, { kind: 'cancel', label: 'Cancel it too', two: true }];
     } else if (q && q.pause) {
       btns = [{ kind: 'unpause', label: 'Unpause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
     } else if (i.state === 'paused' && i.pausedFor) {
-      note = 'Paused because item ' + i.pausedFor + ' is: free that one';
+      note = 'Paused because it waits for item ' + i.pausedFor + ', which is paused. Unpause ' + i.pausedFor + ' to release it.';
       btns = [{ kind: 'cancel', label: 'Cancel', two: true }];
     } else {
       btns = [{ kind: 'pause', label: 'Pause', two: true }, { kind: 'cancel', label: 'Cancel', two: true }];
     }
-    if (c.mode !== 'live') return { note: 'Controls are off until the cut-over', buttons: btns, disabled: true };
+    if (c.mode !== 'live') return { note: 'The controls are switched off while the controller is not live.', buttons: btns, disabled: true };
     return { note: note, buttons: btns, disabled: false };
   }
   /** The two-tap rule: the first tap arms the button, the second within 3 seconds fires it. Returns { fire, armed }. */
@@ -1088,7 +1088,7 @@
       if (i.state === 'paused') {
         // (item 124: the reason the player gave, in words; an item held only because it waits for a paused one says which, and why that one is)
         var head = i.pausedFor ? lastOf[i.pausedFor] : null;
-        var pw = i.pausedFor ? 'Paused because ' + i.pausedFor + ' is' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
+        var pw = i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
         title.append(el('span', 'what', pw));
       }
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
