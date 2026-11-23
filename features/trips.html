@@ -7,7 +7,9 @@
 <meta name="theme-color" content="#202124">
 <title>Trips — Doodle Poker</title>
 <meta name="description" content="Gather the sessions and expenses of a week away, with its own rate and a PDF report.">
-<link rel="icon" href="../favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Doodle Poker">
 <meta property="og:title" content="Trips — Doodle Poker">
@@ -133,6 +135,19 @@
   .price .save { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 0.85rem; color: var(--ink); }
   .price .free { font-family: "Permanent Marker", cursive; font-size: 1.1rem; color: var(--teal-dark); margin: 0.3em 0; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tier-card .count { margin: 0.8em 0 0.2em; } .tier-card .count .n { font-family: "Saira Stencil One", sans-serif; font-size: 1.3rem; color: var(--orange); }
+  .cmp-wrap { overflow-x: auto; max-width: 100%; }
+  table.compare { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 300px; }
+  table.compare caption { font-family: "Permanent Marker", cursive; font-size: 1.3rem; text-align: left; padding: 0 8px 10px; }
+  table.compare th, table.compare td { padding: 8px; border-bottom: 1px solid var(--edge); text-align: center; vertical-align: middle; }
+  table.compare tbody th[scope=row], table.compare tfoot th { text-align: left; font-weight: 400; position: sticky; left: 0; background: var(--paper); }
+  table.compare td, table.compare thead th { width: 64px; }
+  table.compare thead th { position: sticky; top: 0; background: var(--paper); z-index: 2; vertical-align: top; }
+  table.compare thead th:first-child { left: 0; z-index: 3; width: auto; }
+  table.compare .pp { display: block; font-size: 0.75rem; margin-top: 3px; }
+  table.compare tr.grp th { font-family: "Permanent Marker", cursive; font-weight: 400; text-align: left; font-size: 1.05rem; background: var(--fill); }
+  table.compare .tot { font-family: "Saira Stencil One", sans-serif; color: var(--orange); }
+  table.compare .mk { display: block; margin: 0 auto; }
   ul.cols { columns: 1; } .tier-card h3 { margin: 1em 0 0.3em; font-size: 1.05rem; }
   .keybox { display: grid; gap: 6px; margin: 0.8em 0 0; padding: 0; list-style: none; }
   .pn { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 1.4em; }

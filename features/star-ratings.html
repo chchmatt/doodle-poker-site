@@ -7,7 +7,9 @@
 <meta name="theme-color" content="#202124">
 <title>Star ratings — Doodle Poker</title>
 <meta name="description" content="Rate how someone plays, from one to five stars, on skill, aggression, tilt and more. Leave a star empty if unsure.">
-<link rel="icon" href="../favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Doodle Poker">
 <meta property="og:title" content="Star ratings — Doodle Poker">
@@ -133,6 +135,19 @@
   .price .save { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 0.85rem; color: var(--ink); }
   .price .free { font-family: "Permanent Marker", cursive; font-size: 1.1rem; color: var(--teal-dark); margin: 0.3em 0; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tier-card .count { margin: 0.8em 0 0.2em; } .tier-card .count .n { font-family: "Saira Stencil One", sans-serif; font-size: 1.3rem; color: var(--orange); }
+  .cmp-wrap { overflow-x: auto; max-width: 100%; }
+  table.compare { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 300px; }
+  table.compare caption { font-family: "Permanent Marker", cursive; font-size: 1.3rem; text-align: left; padding: 0 8px 10px; }
+  table.compare th, table.compare td { padding: 8px; border-bottom: 1px solid var(--edge); text-align: center; vertical-align: middle; }
+  table.compare tbody th[scope=row], table.compare tfoot th { text-align: left; font-weight: 400; position: sticky; left: 0; background: var(--paper); }
+  table.compare td, table.compare thead th { width: 64px; }
+  table.compare thead th { position: sticky; top: 0; background: var(--paper); z-index: 2; vertical-align: top; }
+  table.compare thead th:first-child { left: 0; z-index: 3; width: auto; }
+  table.compare .pp { display: block; font-size: 0.75rem; margin-top: 3px; }
+  table.compare tr.grp th { font-family: "Permanent Marker", cursive; font-weight: 400; text-align: left; font-size: 1.05rem; background: var(--fill); }
+  table.compare .tot { font-family: "Saira Stencil One", sans-serif; color: var(--orange); }
+  table.compare .mk { display: block; margin: 0 auto; }
   ul.cols { columns: 1; } .tier-card h3 { margin: 1em 0 0.3em; font-size: 1.05rem; }
   .keybox { display: grid; gap: 6px; margin: 0.8em 0 0; padding: 0; list-style: none; }
   .pn { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 1.4em; }
@@ -174,7 +189,7 @@
   <p>Settings, People, Ratings chooses which ratings are shown. Changing a rating is written in the person's Log, and you can also rate people from their seat at a table. Deleting a log line does not change a rating.</p>
   <p>Step by step: <a href="../how-to.html#add-a-person">Add a person</a>.</p>
   <h2>More in People</h2>
-  <ul class="flist"><li><a href="people-list.html"><strong>People and staff pages</strong></a> <span class="tier rec">Rec</span><span class="blurb">One page for everyone you play with, and for the staff you meet, kept across every hand and session.</span></li><li><a href="faces.html"><strong>Faces drawn from parts</strong></a> <span class="tier rec">Rec</span><span class="blurb">Build a hand-drawn face from hair, eyes, glasses, hats and more, so you remember who is who.</span></li><li><a href="describe-a-person.html"><strong>Describe them in words</strong></a> <span class="tier rec">Rec</span><span class="blurb">Type how someone looks, such as a young woman with glasses and a blue t-shirt, and the face is built for you.</span></li><li><a href="player-types.html"><strong>Player types</strong></a> <span class="tier rec">Rec</span><span class="blurb">Give each player a type such as TAG, Nit or Fish, or one of your own, and meet unknown players by a short code.</span></li><li><a href="person-notes.html"><strong>Notes and alerts</strong></a> <span class="tier rec">Rec</span><span class="blurb">Write what you notice about someone, sort it into categories, and mark the ones you must not forget as alerts.</span></li><li><a href="spells.html"><strong>Spells</strong></a> <span class="tier rec">Rec</span><span class="blurb">Mark when someone is tilted, drunk or tired, with a timer that ends it for you.</span></li><li><a href="links-and-quotes.html"><strong>Links and Quotes</strong></a> <span class="tier rec">Rec</span><span class="blurb">Record who is friends, married or up to something, and keep the funny things said at the table.</span></li><li><a href="passport.html"><strong>The passport</strong></a> <span class="tier rec">Rec</span><span class="blurb">Every person's page looks like a page of a passport, and you can share it as a picture.</span></li><li><a href="heros-page.html"><strong>Hero's page</strong></a> <span class="tier rec">Rec</span><span class="blurb">Hero has a passport page too, with a face, a description, a card protector and spells of Hero's own.</span></li></ul>
+  <ul class="flist"><li><a href="people-list.html"><strong>People and staff pages</strong></a> <span class="tier rec">Rec</span><span class="blurb">One page for everyone you play with, and for the staff you meet, kept across every hand and session.</span></li><li><a href="faces.html"><strong>Faces drawn from parts</strong></a> <span class="tier rec">Rec</span><span class="blurb">Build a hand-drawn face from hair, eyes, glasses, hats and more, so you remember who is who.</span></li><li><a href="describe-a-person.html"><strong>Describe them in words</strong></a> <span class="tier rec">Rec</span><span class="blurb">Type how someone looks, such as a young woman with glasses and a blue t-shirt, and the face is built for you.</span></li><li><a href="player-types.html"><strong>Player types</strong></a> <span class="tier rec">Rec</span><span class="blurb">Give each player a type such as TAG, Nit or Fish, or one of your own, and meet unknown players by a short code.</span></li><li><a href="person-notes.html"><strong>Notes and alerts</strong></a> <span class="tier rec">Rec</span><span class="blurb">Write what you notice about someone, sort it into categories, and mark the ones you must not forget as alerts.</span></li><li><a href="spells.html"><strong>Spells</strong></a> <span class="tier rec">Rec</span><span class="blurb">Mark when someone is tilted, drunk or tired, with a timer that ends it for you.</span></li><li><a href="links-and-quotes.html"><strong>Links and Quotes</strong></a> <span class="tier rec">Rec</span><span class="blurb">Record who is friends, married or up to something, and keep the funny things said at the table.</span></li><li><a href="passport.html"><strong>The passport</strong></a> <span class="tier rec">Rec</span><span class="blurb">Every person's page looks like a page of a passport, and you can share it as a picture.</span></li><li><a href="merge-two-people.html"><strong>Merge two people</strong></a> <span class="tier rec">Rec</span><span class="blurb">Found out that two pages are one person? Merge them: one stays with the picture and name, the other's records move across, and Undo is right there.</span></li><li><a href="heros-page.html"><strong>Hero's page</strong></a> <span class="tier rec">Rec</span><span class="blurb">Hero has a passport page too, with a face, a description, a card protector and spells of Hero's own.</span></li></ul>
   <div class="pn"><a href="person-notes.html">← Notes and alerts</a><a href="spells.html">Spells →</a></div>
   <div class="buttons"><a class="button alt" href="../features.html">Back to all features</a></div>
 </section>

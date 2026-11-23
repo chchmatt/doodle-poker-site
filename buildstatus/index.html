@@ -6,8 +6,9 @@
 <title>Doodle Poker</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<link rel="icon" href="../favicon.png">
-<link rel="apple-touch-icon" href="../icon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
   @font-face { font-family: "Permanent Marker"; src: url("PermanentMarker-Latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
   :root {
@@ -118,6 +119,12 @@
   ul.items .num { font: 400 18px/1.2 var(--hand); white-space: nowrap; text-align: right; color: var(--pencil); }
   ul.items .title { min-width: 0; }
   ul.items .when { display: block; font-size: 13px; color: var(--pencil); }
+  /* (item 157) the size mark (S, M, L, H) and the estimate on an item's line: one line, small, never wrapped into the title */
+  ul.items .szline { display: block; font-size: 13px; color: var(--pencil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  ul.items .szmark { display: inline-block; min-width: 1.3em; margin-right: 6px; padding: 0 4px; text-align: center; font: 400 12px/1.4 var(--hand); color: var(--ink); border: 2px solid var(--pencil); border-radius: 6px; }
+  .quiet-line { color: var(--pencil); font-size: 13px; margin: 4px 0 0; }
+  #queue-total { margin-top: 2px; }
+  #queue-total .paused-total { color: var(--pencil); }
   ul.items .chip {
     font-size: 13px; font-weight: 600; padding: 1px 10px; white-space: nowrap;
     border: 2px solid currentColor; border-radius: var(--wobble-small); color: var(--pencil);
@@ -150,10 +157,11 @@
   ul.items li.hl-wait { background: color-mix(in srgb, var(--felt) 22%, transparent); outline: 2px dashed var(--felt); outline-offset: -2px; }
   ul.items li.hl-hold { background: color-mix(in srgb, var(--marker) 20%, transparent); outline: 2px dotted var(--marker); outline-offset: -2px; }
   ul.items li.hl-wait .title, ul.items li.hl-hold .title { text-decoration: underline; text-underline-offset: 3px; }
-  /* (item 165) real tabs: each its own shape, the active one raised and open at the bottom into the page; no scroll bar of any kind (a narrow row wraps instead) and no line under the row */
-  nav.tabs { display: flex; flex-wrap: wrap; gap: 6px 4px; margin-top: 30px; padding: 0; }
-  nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: var(--grid); border: 2px solid var(--pencil); border-radius: 14px 14px 0 0; padding: 6px 12px; cursor: pointer; flex: 0 1 auto; min-width: 0; }
-  nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--card); padding-top: 9px; font-weight: 700; }
+  /* (item 222) real tabs on one full-width line: the line is drawn on the row itself (a 2px rule in the page's rule colour, across its whole width and fixed to the row, so it still reaches both ends when the row scrolls);
+     the tabs stand on it with no line of their own under them; the active tab (top and sides in ink) reaches down over the line, so it opens into the page below. No animation. On a phone the row is one line that scrolls sideways with its bar hidden (see the media rule). */
+  nav.tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 4px; margin-top: 30px; padding: 0 0 2px; background: linear-gradient(var(--rule), var(--rule)) bottom / 100% 2px no-repeat; }
+  nav.tabs button { font: 400 16px/1.2 var(--hand); color: var(--pencil); background: var(--grid); border: 2px solid var(--pencil); border-bottom: 0; border-radius: 14px 14px 0 0; padding: 6px 12px; cursor: pointer; flex: 0 1 auto; min-width: 0; }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); background: var(--card); margin-bottom: -2px; padding: 9px 12px 8px; font-weight: 700; }
   nav.tabs button .n { margin-left: 6px; color: var(--felt); }
   #tab-list > h2, #tab-backlog > h2, #tab-june > h2, #done-head { margin-top: 18px; }
   h3.group { font: 400 17px/1.2 var(--hand); margin: 20px 0 4px; color: var(--pencil); }
@@ -163,6 +171,9 @@
   button.more { margin: 14px 0 0; font: 400 16px/1.2 var(--hand); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); border-radius: var(--wobble-small); padding: 6px 16px; cursor: pointer; }
   footer { margin-top: 40px; font-size: 13px; color: var(--pencil); }
   @media (max-width: 520px) {
+    nav.tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    nav.tabs::-webkit-scrollbar { display: none; }
+    nav.tabs button { flex: 0 0 auto; white-space: nowrap; min-height: 44px; }
     .now-num { font-size: 44px; }
     .now-num[data-digits="4"] { font-size: 32px; }
     .now-num[data-digits="5"] { font-size: 26px; }
@@ -175,7 +186,7 @@
     ul.items li.has-grip .chip { grid-column: 3; justify-self: end; }
     .ctl-btn { max-width: 100%; }
   }
-  .asking { margin: 16px 0 0; padding: 12px 16px; font: 400 19px/1.3 var(--hand); color: var(--ink); background: var(--marker); border-radius: var(--wobble-small); }
+  .restart-alert.asking-alert { cursor: default; }
   /* under an item's title in the list: why it needs the player (item 121), what it waits for and holds up, and who queued it (item 117) */
   /* (item 173) the controls: 44 pixels high at least, no flashing */
   /* (item 187) the controls sit in the description column and end at its right edge, clear of the chip: the grid's own columns, never a typed offset (a row with a gripper has one more column) */
@@ -183,6 +194,7 @@
   ul.items li.has-grip .ctl { grid-column: 3 / -1; }
   /* (item 174) the gripper: only it starts a drag, so scrolling by touching a row still works */
   ul.items li.has-grip { grid-template-columns: 44px var(--numw, 2.4em) 1fr auto; }
+  .grip-space { display: block; width: 44px; height: 0; }
   .grip { width: 44px; height: 44px; padding: 0; margin: -10px 0; font: 400 26px/1 var(--hand); color: var(--pencil); background: none; border: 0; cursor: grab; touch-action: none; user-select: none; }
   .grip:disabled { opacity: 0.4; cursor: default; }
   ul.items li.lifted { background: var(--grid); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
@@ -206,12 +218,43 @@
   .dlg .dchip { min-height: 44px; min-width: 44px; padding: 6px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; }
   .dlg .dchip.own { color: var(--card); background: var(--ink); border-color: var(--ink); }
   .dlg .dchip:disabled { opacity: 0.45; cursor: default; }
+  /* (item 224) the topic of the item in play, in the top box: the dialog's chip look; a button when it can jump to the row, a plain label when it cannot; no animation */
+  /* (item 236) one alert for each process that runs code that has since changed: at the top of the page, above the item in play. The border and a soft glow pulse slowly; with reduced motion it is a steady, strongly coloured box. */
+  .restart-alerts { margin: 10px 0 0; }
+  .restart-alert { box-sizing: border-box; display: block; width: 100%; margin: 0 0 8px; padding: 10px 14px; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 3px solid var(--marker); border-radius: var(--wobble-small); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--marker) 45%, transparent); cursor: pointer; animation: restart-pulse 1.5s ease-in-out infinite; }
+  .restart-alert .restart-head { display: block; font: 400 19px/1.25 var(--hand); overflow-wrap: anywhere; }
+  .restart-alert .restart-line { display: block; margin-top: 2px; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+  @keyframes restart-pulse { 0%, 100% { border-color: color-mix(in srgb, var(--marker) 35%, var(--card)); box-shadow: 0 0 2px 0 color-mix(in srgb, var(--marker) 15%, transparent); } 50% { border-color: var(--marker); box-shadow: 0 0 12px 3px color-mix(in srgb, var(--marker) 55%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { .restart-alert { animation: none; border-color: var(--marker); background: color-mix(in srgb, var(--marker) 14%, var(--card)); box-shadow: 0 0 0 2px var(--marker); } }
+  .hold-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 8px 0 0; }
+  .hold-row .hold-banner { flex: 1 1 14em; min-width: 0; margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+  .hold-row .hold-banner.on { padding: 4px 8px; border: 2px dashed var(--marker); border-radius: var(--wobble-small); }
+  .now-topic { margin: 6px 0 0; }
+  .now-topic .dchip { box-sizing: border-box; display: inline-block; max-width: 100%; min-height: 44px; min-width: 44px; padding: 6px 14px; font-family: var(--hand); font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); cursor: pointer; overflow-wrap: anywhere; }
+  .now-topic span.dchip { min-height: 0; padding: 2px 12px; cursor: default; color: var(--pencil); }
   .dlg .dlg-other { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .dlg .dlg-other input { flex: 1 1 160px; min-height: 44px; box-sizing: border-box; padding: 6px 10px; font-size: 16px; color: var(--ink); background: var(--card); border: 2px solid var(--rule); border-radius: var(--wobble-small); }
+  .dlg .dlg-radios { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 2px; }
+  .dlg .dlg-radio { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-family: var(--hand); font-size: 17px; color: var(--ink); cursor: pointer; }
+  .dlg .dlg-radio input { width: 22px; height: 22px; margin: 0; }
   .dlg .dlg-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .ctl-btn:disabled { opacity: 0.45; cursor: default; }
+  .runner-strip { margin: 8px 0; display: grid; gap: 6px; }
+  .strip-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 6px 8px; border: 2px solid var(--rule); border-radius: var(--wobble-small); background: var(--card); }
+  .strip-title { min-height: 44px; text-align: left; font-family: var(--hand); font-size: 16px; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip-row .bar { grid-column: 1 / -1; }
+  .strip-left { grid-column: 1 / -1; font-size: 13px; color: var(--pencil); }
+  .strip-note { font-size: 13px; color: var(--pencil); margin: 2px 0; }
+  .runner-detail { margin: 6px 0 0; padding: 6px 8px; border-left: 3px solid var(--rule); font-size: 14px; }
+  .runners-box { margin: 8px 0; padding: 8px 10px; border: 2px solid var(--rule); border-radius: var(--wobble-small); background: var(--card); }
+  .runners-head, .runner-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .runners-title, .runner-id { font-family: var(--hand); font-size: 16px; }
+  .runner-state, .runner-line, .runners-limit { font-size: 13px; color: var(--dim, var(--ink)); margin: 2px 0; }
   .ctl-state { display: block; font-size: 14px; color: var(--pencil); margin: 4px 0; }
   .ctl-state.refused { color: var(--redpen); cursor: pointer; }
+  ul.items .restart-mark { display: inline-block; margin-left: 8px; font-size: 15px; color: var(--pencil); cursor: help; }
+  .built-line { margin: 8px 0 0; font-size: 13px; color: var(--pencil); overflow-wrap: anywhere; }
+  .lock-line { margin: 4px 0; font-size: 13px; color: var(--pencil); overflow-wrap: anywhere; }
   .ctl-note { font-size: 14px; color: var(--redpen); margin: 6px 0; }
   /* (item 196) the topic headers of the grouped list */
   ul.items li.topic-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 2px 6px; margin-top: 12px; border-bottom: 2px solid var(--rule); }
@@ -286,22 +329,32 @@
   var CAP = 0.95;                        // a step that is not done never shows more than this
 
   // the structure of the page: not in the page until the first good answer (a wrong link must show nothing of it)
-  var MARKUP = `<p id="asking" class="asking" hidden></p>
-  <header>
+  var MARKUP = `<header>
     <h1>Doodle Poker build</h1>
     <span id="fresh" role="status"></span>
     <span id="watcher" role="status" hidden></span>
   </header>
 
+  <div class="restart-alerts" id="restart-alerts" hidden></div>
+  <div class="restart-alerts" id="asking" role="alert" hidden></div>
   <p id="failed" class="notice warn" hidden></p>
   <p id="stale" class="notice warn" hidden></p>
   <p id="paused" class="notice warn" hidden></p>
+
+  <div class="runner-strip" id="runner-strip" hidden></div>
 
   <section id="now" aria-live="polite">
     <div class="now-head">
       <div class="now-num" id="now-num"></div>
       <p class="now-title" id="now-title"></p>
     </div>
+    <div class="now-topic" id="now-topic" hidden></div>
+    <p class="built-line" id="now-restart" hidden></p>
+    <div class="hold-row" id="hold-row" hidden></div>
+    <div class="runners-box" id="runners-box" hidden></div>
+    <div class="landings-held" id="landings-held" hidden></div>
+    <div class="deploy-box" id="deploy-box" hidden></div>
+    <div class="attended-box" id="attended-box" hidden></div>
     <p class="now-doing" id="now-doing"></p>
     <div class="now-rel" id="now-rel"></div>
     <div class="bar" id="now-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
@@ -313,6 +366,7 @@
     <p class="counts" id="counts" hidden></p>
     <ul class="tasks" id="tasks"></ul>
     <p class="notice warn" id="builder-quiet" hidden></p>
+    <p class="built-line" id="built-line" hidden></p>
     <p class="guess" id="guess" hidden>The bars are a guess from how long each step usually takes. They move by themselves between updates and never reach full until the step is done.</p>
   </section>
 
@@ -321,7 +375,9 @@
   <div id="tab-list">
   <h2>The list</h2>
   <div class="list-count" id="list-count"></div>
+  <div class="list-count" id="queue-total" hidden></div>
   <div class="bar thin done" id="list-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+  <p class="lock-line" id="lock-line" hidden></p>
   <p class="ctl-note" id="ctl-note" hidden></p>
   <div class="topic-states" id="topic-states" hidden></div>
   <ul class="items" id="items"></ul>
@@ -344,6 +400,7 @@
     <h2 id="done-head">Done</h2>
     <ul class="items finished" id="done-items"></ul>
     <button type="button" class="more" id="done-more" hidden>Show 20 more</button>
+    <p class="quiet-line" id="estimate-accuracy" hidden></p>
   </section>
   </div>
 
@@ -364,12 +421,14 @@
     if (moreBtn) moreBtn.addEventListener('click', function () { doneShown += DONE_STEP; draw(); });
   }
 
+  var BASE_TITLE = null;                 // (item 238) the page's title without the marker
   var TABS = [['list', 'The list'], ['backlog', 'Backlog'], ['june', 'June Backlog'], ['done', 'Done']];
   var TAB_KEY = 'dp-buildstatus-tab';
   var DONE_STEP = 20;                    // the Done tab shows this many, and this many more each time the button is pressed (item 161)
   var tab = (function () { try { var t = localStorage.getItem(TAB_KEY); return TABS.some(function (x) { return x[0] === t; }) ? t : 'list'; } catch (e) { return 'list'; } })();
   var doneShown = DONE_STEP;
-  function chooseTab(t) { tab = t; try { localStorage.setItem(TAB_KEY, t); } catch (e) { /* (the choice is just not remembered) */ } draw(); }
+  var tabScroll = true;                  // (item 222) the active tab is scrolled into view on load and when a tab is chosen, never on the page's own refresh
+  function chooseTab(t) { tab = t; tabScroll = true; try { localStorage.setItem(TAB_KEY, t); } catch (e) { /* (the choice is just not remembered) */ } draw(); }
 
   var data = null;
   var between = null;                    // the gap between two items (item 86): {text, at}, or null while an item is in play
@@ -403,6 +462,46 @@
     var h = Math.floor(m / 60);
     return h + ' h ' + (m % 60) + ' min';
   };
+  /* sizeWords:start */
+  /* Item 157: sizes and estimates, as plain functions. S, M, L or H for a size ('' for none: an unsized item shows nothing); minutes as "45 min" or "1 h 20 min"; the estimate "about 45 min". */
+  var SIZE_MARK = { Small: 'S', Medium: 'M', Large: 'L', Huge: 'H' };
+  var sizeMark = function (size) { return SIZE_MARK[size] || ''; };
+  var minutesWords = function (min) {
+    var m = Math.max(0, Math.round(min));
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60);
+    return m % 60 ? h + ' h ' + (m % 60) + ' min' : h + ' h';
+  };
+  /* The line under an open item: "about 45 min" (the mark is drawn separately); nothing without a size. */
+  var estimateWords = function (i) { return i && SIZE_MARK[i.size] && typeof i.sizeMin === 'number' && i.sizeMin > 0 ? 'about ' + minutesWords(i.sizeMin) : ''; };
+  /* The queue's total: the open items that are not paused and not waiting for the player count; one without a size counts at the median of the finished items (tookSec in the done list); the paused ones are added up apart. */
+  var queueTotal = function (open, done) {
+    var took = (done || []).map(function (r) { return r && typeof r.tookSec === 'number' && r.tookSec > 0 ? r.tookSec / 60 : null; }).filter(function (x) { return x !== null; }).sort(function (a, b) { return a - b; });
+    var median = took.length ? (took.length % 2 ? took[took.length >> 1] : (took[(took.length >> 1) - 1] + took[took.length >> 1]) / 2) : 0;
+    var t = { minutes: 0, pausedMinutes: 0, unsized: 0, pausedUnsized: 0, counted: 0 };
+    (open || []).forEach(function (i) {
+      if (!i || i.state === 'needs-you' || i.attended === true || i.state === 'failed' || i.state === 'blocked') return;
+      var sized = SIZE_MARK[i.size] && typeof i.sizeMin === 'number' && i.sizeMin > 0;
+      var m = sized ? i.sizeMin : median;
+      if (i.state === 'paused') { t.pausedMinutes += m; if (!sized) t.pausedUnsized += 1; return; }
+      t.minutes += m; t.counted += 1;
+      if (!sized) t.unsized += 1;
+    });
+    return t;
+  };
+  var queueTotalWords = function (t) {
+    if (!t || !(t.minutes > 0)) return ''; // (nothing sized and nothing finished to take a median from: no figure rather than a false "0 min")
+    var w = 'About ' + minutesWords(t.minutes) + ' of work left' + (t.unsized ? ' (' + t.unsized + ' not sized)' : '');
+    return w;
+  };
+  /* "Estimates: finished items took 1.2 times the estimate on average; 7 of the last 10 inside the guess" (from the progress file's estimateAccuracy; nothing when the file lacks it). */
+  var accuracyWords = function (a) {
+    if (!a || typeof a !== 'object' || !(a.n > 0) || typeof a.medianRatio !== 'number') return '';
+    var w = 'Estimates: finished items took ' + (Math.round(a.medianRatio * 10) / 10) + ' times the estimate on average';
+    if (a.insideOf > 0) w += '; ' + a.inside + ' of the last ' + a.insideOf + ' inside the guess';
+    return w;
+  };
+  /* sizeWords:end */
 
   var STATES = {
     'done':     { cls: 'done',    chip: 'Done' },
@@ -585,6 +684,7 @@
   var DONE_SHOWN_MS = 3000;              // "Done" stays this long on a row
   var CONTROLLER_QUIET_MS = 2 * 60 * 1000; // the controller has not been seen for this long: commands wait
   var WAIT_TOO_LONG_MS = 2 * 60 * 1000;  // a command still unanswered after this long no longer hides the row's buttons (item 190)
+  var lastOpenItems = [];                // (item 259: the open items as the list drew them last, for the topics' time left)
   var pending = {};                      // item number -> { id, kind, status: 'sending' | 'waiting' | 'done' | 'refused', reason, doneAt }
 
   /** The part of the address after the #, split into the page's own name and the token (or null). */
@@ -630,11 +730,16 @@
     if (kind === 'pausetopic') return { type: 'pause-topic', topic: extra, why: 'Paused from the phone at ' + clock(new Date(atMs).toISOString()) };
     if (kind === 'unpausetopic') return { type: 'unpause-topic', topic: extra };
     if (kind === 'discardall') return { type: 'discard-cancelled' };
+    if (kind === 'holdall') return { type: 'hold-all' }; // (item 229: finish the item being built, then nothing starts)
+    if (kind === 'releaseall') return { type: 'release-all' };
     if (kind === 'letgo') return { type: 'release-held', id: n, n: extra };
     if (kind === 'changetopic') return { type: 'change-topic', id: n, topic: extra }; // (item 215, through item 214)
     // (item 245: topic branches) auto-merge for one topic or for all, and the Merge button
     if (kind === 'automerge') return extra && extra.topic ? { type: 'set-auto-merge', topic: extra.topic, value: !!extra.value } : { type: 'set-auto-merge', value: !!(extra && extra.value) };
     if (kind === 'mergetopic') return { type: 'merge-topic', topic: extra };
+    // (item 249) how many runners are wanted, and the button for a window closed by hand
+    if (kind === 'setrunners') return { type: 'set-runners', n: extra };
+    if (kind === 'startrunner') return { type: 'start-runner', runner: extra };
     return null;
   }
   /** What the controller is doing, from the snapshot: null when this snapshot has no controller fields (an old one). */
@@ -691,12 +796,14 @@
         draw();
       });
   }
-  function sendCommand(n, kind, extra) {
+  /** `key` is where the pending change is kept (the item's number by default: a newer command on the same item replaces the older one; item 234's topic change on top of a state change has its own key, `<n>t`). */
+  function sendCommand(n, kind, extra, key) {
     var id = newId();
     var nowMs = Date.now();
     var file = commandFile(id, [commandFor(kind, n, extra, nowMs)], nowMs);
-    pending[n] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra }; // (a newer command on the same item replaces the older one)
-    postFile(n, id, file);
+    if (key === undefined) key = n;
+    pending[key] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra, n: n };
+    postFile(key, id, file);
     draw();
   }
   // ---- every command is optimistic (item 217) ----
@@ -714,6 +821,7 @@
   function itemIn(raw, n) { return (raw && Array.isArray(raw.items) ? raw.items : []).filter(function (x) { return x && String(x.number) === String(n); })[0] || null; }
   /** Does the file show what the command was expected to do? Moves are not judged here (the file's own order takes over after a short grace). */
   function holds(p, raw, key) {
+    if (p.n !== undefined && String(key).slice(-1) === 't') key = p.n; // (item 234: the topic part of a Save keeps its own key)
     var q = queueEntry(raw, Number(key));
     var it = itemIn(raw, key);
     switch (p.kind) {
@@ -723,6 +831,8 @@
       case 'restore': return !cancelledHas(raw, key);
       case 'discard': return !cancelledHas(raw, key);
       case 'discardall': return !(raw && Array.isArray(raw.cancelled) && raw.cancelled.length);
+      case 'holdall': return !!(raw && raw.hold);
+      case 'releaseall': return !(raw && raw.hold);
       case 'letgo': return !(q && q.heldBy);
       case 'pausetopic': { var tp = topicOf(raw, p.extra); return !!(tp && tp.paused); }
       case 'unpausetopic': { var tu = topicOf(raw, p.extra); return !(tu && tu.paused); }
@@ -761,7 +871,7 @@
     keys.sort(function (a, b) { return (pending[a].at || 0) - (pending[b].at || 0); });
     keys.forEach(function (key) {
       var p = pending[key];
-      var n = Number(key);
+      var n = p.n !== undefined && String(key).slice(-1) === 't' ? Number(p.n) : Number(key);
       var it = itOf(n);
       var qe = qOf(n);
       switch (p.kind) {
@@ -799,6 +909,8 @@
           if (it && Array.isArray(it.after)) it.after = it.after.filter(function (a) { return a !== p.extra; });
           if (it && it.state === 'paused' && !(qe && qe.pause) && !it.pausedFor) { it.state = it.attended === true ? 'needs-you' : 'waiting'; delete it.reason; }
           break;
+        case 'holdall': d.hold = { at: stamp, by: 'page' }; break; // (item 229: the banner shows at once)
+        case 'releaseall': delete d.hold; break;
         case 'automerge':
           if (p.extra && p.extra.topic) { var ta2 = topicOf(d, p.extra.topic); if (ta2) ta2.autoMerge = !!p.extra.value; } else d.autoMerge = !!(p.extra && p.extra.value);
           break;
@@ -862,6 +974,10 @@
   var dlgOther = false;                  // "Other..." was pressed: the text box shows
   var dlgOtherMsg = '';                  // what is wrong with the typed topic, said in place
   var dlgOtherText = '';
+  var dlgChoice = { state: null, topic: null }; // (item 234) what the radios and chips show now; nothing is sent until Save
+  var dlgSaving = false;
+  var dlgSaveBtn = null;
+  var dlgFocus = '';                     // the radio or chip to give the focus back to after a redraw
   var dlgWantInput = false;              // put the cursor in the text box on the next draw
   var dlgSig = '';                       // what the open dialog was last drawn from: it is drawn again only when this changes, so a half-typed topic survives the page's polling
   var dlgReturn = null;                  // the row that had the focus: it gets it back on closing
@@ -871,7 +987,9 @@
   var HELP = {
     pause: 'Pause keeps the item from being built until it is unpaused.',
     unpause: 'Unpause lets the item be built again.',
-    cancel: 'Cancel takes the item out of the queue; it can be restored for 7 days.',
+    states: 'Queued: built in its turn. Paused: not built until it is queued again. Cancelled: out of the queue; it can be restored for 7 days.',
+    cancelledStates: 'Queued puts the item back in the queue. Cancelled leaves it out; it is removed by itself after 7 days.',
+    topicStates: 'Running: the topic\u2019s items are built in turn. Paused: none of them is built until it is running again.',
     restore: 'Restore puts the item back in the queue.',
     discard: 'Removing takes the item off the list for good; the controller keeps the record.',
     letgo: 'Let it go stops the item waiting for the cancelled item.',
@@ -912,8 +1030,21 @@
       v.state = g && g.paused ? 'Paused' : 'Running';
       if (g) v.lines.push(g.done + ' of ' + g.total + ' done');
       if (!live) v.lines.push('The controls are switched off while the controller is not live.');
-      v.buttons = [g && g.paused ? btn('unpausetopic', 'Unpause topic', dlg.name) : btn('pausetopic', 'Pause topic', dlg.name)];
+      var tInitial = g && g.paused ? 'paused' : 'running';
+      v.radios = { label: 'Topic state', items: [{ value: 'running', label: 'Running' }, { value: 'paused', label: 'Paused' }], choice: dlgChoice.state || tInitial, disabled: !live || !g, help: HELP.topicStates };
+      v.save = { enabled: live && !!g && (dlgChoice.state || tInitial) !== tInitial };
       key = 't:' + dlg.name;
+    } else if (dlg.kind === 'restart') {
+      var re = (Array.isArray(data.restart) ? data.restart : []).filter(function (x) { return x && x.who === dlg.who; })[0];
+      v.title = RESTART_HEAD[dlg.who] || 'Restart';
+      if (re) {
+        v.lines.push(restartLine(re, data, Date.now()));
+        if (Array.isArray(re.files) && re.files.length) v.lines.push('Files: ' + re.files.join(', '));
+        if (Array.isArray(re.items) && re.items.length) v.lines.push('Items: ' + re.items.join(', '));
+        v.lines.push(dlg.who === 'controller' ? 'The controller starts itself again when its scripts change.' : dlg.who === 'runner' ? 'Close the runner window and open it again from its shortcut.' : 'Open a new chat in VS Code and type todo.');
+      } else v.lines.push('This has been restarted: nothing is needed any more.');
+      v.closeOnly = true;
+      key = 'restart';
     } else if (dlg.kind === 'all') {
       var list = Array.isArray(data.cancelled) ? data.cancelled : [];
       v.title = 'Remove all cancelled';
@@ -945,23 +1076,34 @@
         var holds = dlgCtx.items.filter(function (o) { return o !== i && !isFinished(o) && Array.isArray(o.after) && o.after.indexOf(n) >= 0; }).map(function (o) { return itemWords(o.number); });
         if (holds.length) v.lines.push('Holds up item ' + holds.join(', '));
         if (typeof i.queuedBy === 'number') v.lines.push('Queued by item ' + i.queuedBy);
+        if (restartWords(i.restart)) v.lines.push(restartWords(i.restart));
         if (i.size) v.lines.push('Size: ' + i.size + (typeof i.sizeMin === 'number' ? ', about ' + i.sizeMin + ' minutes' : ''));
         var cs = controlsFor(i, data);
         if (!cs) v.lines.push('The buttons need this page’s link with its key, and a controller that has written to it.');
         else {
           if (cs.note) v.lines.push(cs.note);
-          v.buttons = cs.buttons.map(function (b) { return btn(b.kind, b.label, b.extra); });
+          // (item 234: the states are radios under Save; only what is not a state stays a button: Let it go)
+          v.buttons = cs.buttons.filter(function (b) { return b.kind === 'letgo'; }).map(function (b) { return btn(b.kind, b.label, b.extra); });
           if (cs.disabled) v.buttons.forEach(function (b) { b.disabled = true; });
+          if (!cs.buttons.length) v.closeOnly = true; // (the item being built: details only)
+          else {
+            var iInit = i.state === 'paused' ? 'paused' : 'queued';
+            v.radios = { label: 'State', items: [{ value: 'queued', label: 'Queued' }, { value: 'paused', label: 'Paused' }, { value: 'cancelled', label: 'Cancelled' }], choice: dlgChoice.state || iInit, disabled: !!cs.disabled, help: HELP.states };
+          }
         }
+        if (!cs) v.closeOnly = true;
         // the topic chips: the item's own first (marked), then every other topic on the page, then Other...
         var names = (Array.isArray(data.topics) ? data.topics : []).map(function (t) { return t && t.name; }).filter(function (t) { return typeof t === 'string' && t && t !== 'urgent'; });
         var own = i.topic && i.topic !== 'urgent' ? i.topic : '';
         var order = (own ? [own] : []).concat(names.filter(function (t) { return t !== own; }));
         var why2 = !inbox ? 'This page has no key to send commands with.' : !c ? 'The controller has not written to this page yet.' : c.mode !== 'live' ? 'The controls are switched off while the controller is not live.'
           : i.state === 'working' ? 'The item being built cannot change topic.' : q && q.tests ? 'A tests item stays with its topic.' : i.topic === 'urgent' ? 'An urgent item has no topic to change.' : !i.topic ? 'This item has no topic yet.' : '';
-        v.chips = order.map(function (t) { return { name: t, own: t === own, disabled: !!why2 || t === own }; });
-        v.chips.push({ name: 'Other...', other: true, disabled: !!why2 });
+        var chosenTopic = dlgChoice.topic || own;
+        var cancelling = v.radios && v.radios.choice === 'cancelled';
+        v.chips = order.map(function (t) { return { name: t, own: t === own, on: !dlgOther && t === chosenTopic, disabled: !!why2 || cancelling }; });
+        v.chips.push({ name: 'Other...', other: true, on: dlgOther, disabled: !!why2 || cancelling });
         v.chipNote = why2;
+        if (v.radios) v.save = { enabled: dlgSaveEnabled() };
       } else if (x) {
         v.title = n + '. ' + x.title;
         v.state = 'Cancelled';
@@ -970,10 +1112,13 @@
         var left = c ? daysLeftWords(c, x.at, Date.now()) : '';
         if (left) v.lines.push(left);
         if (!live) v.lines.push('The controls are switched off while the controller is not live.');
-        v.buttons = [btn('restore', 'Restore'), btn('discard', 'Remove now')];
+        v.buttons = [btn('discard', 'Remove now')];
+        v.radios = { label: 'State', items: [{ value: 'queued', label: 'Queued' }, { value: 'cancelled', label: 'Cancelled' }], choice: dlgChoice.state || 'cancelled', disabled: !live, help: HELP.cancelledStates };
+        v.save = { enabled: live && (dlgChoice.state || 'cancelled') !== 'cancelled' };
       } else {
         v.title = 'Item ' + n;
         v.lines.push('This item is not on the page any more.');
+        v.closeOnly = true;
       }
     }
     var words = liveWords(key);
@@ -987,7 +1132,7 @@
   }
   function openDialog(d, from) {
     dlg = d;
-    dlgOther = false; dlgOtherMsg = ''; dlgOtherText = ''; dlgWantInput = false; dlgSig = '';
+    dlgOther = false; dlgOtherMsg = ''; dlgOtherText = ''; dlgWantInput = false; dlgSig = ''; dlgChoice = { state: null, topic: null }; dlgFocus = '';
     dlgReturn = from || null;
     drawDialog();
   }
@@ -1003,27 +1148,65 @@
     dlgReturn = null;
     draw();
   }
-  function submitOther(n, raw) {
-    var t = String(raw || '').trim().toLowerCase();
-    dlgOtherText = String(raw || '');
-    if (!t) dlgOtherMsg = 'Type a topic name first.';
-    else if (t === 'urgent') dlgOtherMsg = 'Urgent is not a topic an item is moved into.';
-    else if (!TOPIC_NAME.test(t)) dlgOtherMsg = TOPIC_WORDS;
-    else {
-      dlgOtherMsg = ''; dlgOther = false; dlgOtherText = '';
-      sendCommand(n, 'changetopic', t);
-      return;
+  /** What Save would send, from what the radios and chips show now: { cmds: [{ key, n, kind, extra }], err }. A state change comes first, then the topic change (its own key). */
+  function topicBlockedFor(i, q) {
+    var c = controllerOf(data);
+    return !inbox || !c || c.mode !== 'live' || i.state === 'working' || !!(q && q.tests) || i.topic === 'urgent' || !i.topic;
+  }
+  function dlgCommands() {
+    var out = { cmds: [], err: '' };
+    if (!dlg || !data) return out;
+    if (dlg.kind === 'topic') {
+      var g = topicGroupsNow.filter(function (x) { return x.key === dlg.name; })[0];
+      var ti = g && g.paused ? 'paused' : 'running';
+      var tc = dlgChoice.state || ti;
+      if (g && tc !== ti) out.cmds.push({ key: 't:' + dlg.name, n: 't:' + dlg.name, kind: tc === 'paused' ? 'pausetopic' : 'unpausetopic', extra: dlg.name });
+      return out;
     }
-    dlgWantInput = true;
-    drawDialog();
+    if (dlg.kind !== 'item') return out;
+    var n = dlg.n;
+    var i = dlgCtx.lastOf[n];
+    var open = !!(i && !isFinished(i));
+    var init = open ? (i.state === 'paused' ? 'paused' : 'queued') : 'cancelled';
+    var choice = dlgChoice.state || init;
+    if (choice !== init) out.cmds.push({ key: n, n: n, kind: choice === 'cancelled' ? 'cancel' : choice === 'paused' ? 'pause' : init === 'paused' ? 'unpause' : 'restore' });
+    if (!open || choice === 'cancelled' || topicBlockedFor(i, queueEntry(data, n))) return out;
+    var want = '';
+    if (dlgOther) {
+      var t = String(dlgOtherText || '').trim().toLowerCase();
+      if (t) {
+        if (t === 'urgent') out.err = 'Urgent is not a topic an item is moved into.';
+        else if (!TOPIC_NAME.test(t)) out.err = TOPIC_WORDS;
+        else want = t;
+      }
+    } else if (dlgChoice.topic) want = dlgChoice.topic;
+    if (want && want !== i.topic) out.cmds.push({ key: n + 't', n: n, kind: 'changetopic', extra: want });
+    return out;
+  }
+  /** Save is on when something differs: the state, a chosen topic, or a typed one. */
+  function dlgSaveEnabled() {
+    var c = controllerOf(data);
+    if (!inbox || !c || c.mode !== 'live') return false;
+    var p = dlgCommands();
+    return p.cmds.length > 0 || (dlgOther && !!String(dlgOtherText || '').trim());
+  }
+  function saveDialog() {
+    if (!dlg || dlgSaving) return;
+    var plan = dlgCommands();
+    if (plan.err) { dlgOtherMsg = plan.err; dlgWantInput = true; drawDialog(); return; }
+    if (!plan.cmds.length) return;
+    dlgSaving = true; // (a second tap on Save sends nothing)
+    plan.cmds.forEach(function (c) { sendCommand(c.n, c.kind, c.extra, c.key); });
+    dlgSaving = false;
+    closeDialog();
   }
   function drawDialog() {
     var back = $('dlg');
     if (!back) return;
     var v = dlgView();
     if (!v) { if (!back.hidden || dlgSig) { back.hidden = true; back.replaceChildren(); dlgSig = ''; } return; }
-    var sig = JSON.stringify(v);
-    if (sig === dlgSig && !back.hidden) return;
+    var sig = JSON.stringify(v, function (k, val) { return k === 'save' ? undefined : val; }); // (Save's on or off is set in place, so a half-typed topic keeps its box)
+    if (sig === dlgSig && !back.hidden) { if (dlgSaveBtn && v.save) dlgSaveBtn.disabled = !v.save.enabled; return; }
     var wasHidden = back.hidden;
     dlgSig = sig;
     back.hidden = false;
@@ -1036,27 +1219,43 @@
     v.lines.forEach(function (t) { box.append(el('p', 'dlg-line', t)); });
     if (v.words) box.append(el('p', 'dlg-words' + (v.words.sticky ? ' refused' : ''), v.words.text));
     var key = dlg.kind === 'topic' ? 't:' + dlg.name : dlg.kind === 'all' ? 'all' : dlg.n;
-    var acts = el('div', 'dlg-actions');
-    v.buttons.forEach(function (b) {
-      if (b.help) box.append(el('p', 'dlg-help', b.help));
-      var bt = el('button', 'ctl-btn', b.label);
-      bt.type = 'button';
-      if (b.disabled) bt.disabled = true;
-      else bt.addEventListener('click', function () { sendCommand(key, b.kind, b.extra); });
-      acts.append(bt);
-    });
+    var focusMap = {};
+    var saveBtn = null;
+    dlgSaveBtn = null;
+    // (item 234) the state as radios: nothing is sent until Save
+    if (v.radios) {
+      var rg = el('div', 'dlg-radios');
+      rg.setAttribute('role', 'radiogroup');
+      rg.setAttribute('aria-label', v.radios.label);
+      v.radios.items.forEach(function (r) {
+        var lab = el('label', 'dlg-radio');
+        var ri = el('input');
+        ri.type = 'radio';
+        ri.name = 'dlg-state';
+        ri.value = r.value;
+        ri.checked = r.value === v.radios.choice;
+        if (v.radios.disabled) ri.disabled = true;
+        else ri.addEventListener('click', function () { dlgChoice.state = r.value; dlgFocus = 'radio:' + r.value; drawDialog(); });
+        lab.append(ri, el('span', null, r.label));
+        rg.append(lab);
+        focusMap['radio:' + r.value] = ri;
+      });
+      box.append(rg);
+      if (v.radios.help) box.append(el('p', 'dlg-help', v.radios.help));
+    }
     var inp = null;
     if (v.chips) {
       box.append(el('p', 'dlg-sect', 'Topic'));
       var chips = el('div', 'dlg-chips');
       v.chips.forEach(function (ch) {
-        var cb = el('button', 'dchip' + (ch.own ? ' own' : ''), ch.name);
+        var cb = el('button', 'dchip' + (ch.on ? ' own' : ''), ch.name);
         cb.type = 'button';
-        if (ch.own) cb.setAttribute('aria-pressed', 'true');
+        cb.setAttribute('aria-pressed', ch.on ? 'true' : 'false');
         if (ch.disabled) cb.disabled = true;
         else if (ch.other) cb.addEventListener('click', function () { dlgOther = true; dlgWantInput = true; dlgOtherMsg = ''; drawDialog(); });
-        else cb.addEventListener('click', function () { sendCommand(dlg.n, 'changetopic', ch.name); });
+        else cb.addEventListener('click', function () { dlgChoice.topic = ch.name; dlgOther = false; dlgOtherMsg = ''; dlgFocus = 'chip:' + ch.name; drawDialog(); });
         chips.append(cb);
+        focusMap['chip:' + ch.name] = cb;
       });
       box.append(chips);
       if (v.chipNote) box.append(el('p', 'dlg-help', v.chipNote));
@@ -1067,24 +1266,52 @@
         inp.value = dlgOtherText;
         inp.setAttribute('aria-label', 'New topic name');
         inp.setAttribute('maxlength', '60');
-        inp.addEventListener('input', function () { dlgOtherText = inp.value; });
-        inp.addEventListener('keydown', function (e) { if (e && e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); submitOther(dlg.n, inp.value); } });
-        var mv = el('button', 'ctl-btn', 'Move');
-        mv.type = 'button';
-        mv.addEventListener('click', function () { submitOther(dlg.n, inp.value); });
-        row.append(inp, mv);
+        inp.addEventListener('input', function () { dlgOtherText = inp.value; if (saveBtn) saveBtn.disabled = !dlgSaveEnabled(); });
+        inp.addEventListener('keydown', function (e) {
+          if (!e || e.key !== 'Enter') return;
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+          dlgOtherText = inp.value;
+          if (!String(inp.value || '').trim()) { dlgOtherMsg = 'Type a topic name first.'; dlgWantInput = true; drawDialog(); } else saveDialog();
+        });
+        row.append(inp);
         box.append(row);
         if (v.otherMsg) box.append(el('p', 'dlg-words refused', v.otherMsg));
       }
     }
-    var close = el('button', 'ctl-btn', 'Close');
+    // (what is not a state stays a button: Let it go, Remove now, Remove all cancelled; each sends its command and closes the dialog at once)
+    if (v.buttons.length) {
+      var ex = el('div', 'dlg-actions');
+      v.buttons.forEach(function (b) {
+        if (b.help) box.append(el('p', 'dlg-help', b.help));
+        var bt = el('button', 'ctl-btn', b.label);
+        bt.type = 'button';
+        if (b.disabled) bt.disabled = true;
+        else bt.addEventListener('click', function () { sendCommand(key, b.kind, b.extra); closeDialog(); });
+        ex.append(bt);
+      });
+      box.append(ex);
+    }
+    var acts = el('div', 'dlg-actions');
+    var close = el('button', 'ctl-btn', v.closeOnly ? 'Close' : 'Cancel'); // ("Cancel" only ever means closing with no change; the item's state is called Cancelled)
     close.type = 'button';
     close.addEventListener('click', closeDialog);
     acts.append(close);
+    if (v.save) {
+      saveBtn = el('button', 'ctl-btn', 'Save');
+      saveBtn.type = 'button';
+      if (!v.save.enabled) saveBtn.disabled = true;
+      saveBtn.addEventListener('click', saveDialog);
+      acts.append(saveBtn);
+      dlgSaveBtn = saveBtn;
+    }
     box.append(acts);
     box.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); });
     back.replaceChildren(box);
-    if ((wasHidden || dlgWantInput) && typeof (inp || close).focus === 'function') { (dlgWantInput && inp ? inp : close).focus(); dlgWantInput = false; }
+    var want = dlgWantInput && inp ? inp : dlgFocus && focusMap[dlgFocus] ? focusMap[dlgFocus] : wasHidden ? close : null;
+    if (want && typeof want.focus === 'function') want.focus();
+    dlgWantInput = false;
+    dlgFocus = '';
   }
   /** Escape closes; Tab stays inside the dialog. */
   function dlgKey(e) {
@@ -1102,13 +1329,16 @@
   }
   /** The words under a row for a move it is waiting on (the buttons are in the dialog now, item 215). */
   function drawRowWords(i, li) {
-    var words = pendingWords(pending[i.number], data, Date.now());
-    if (!words) return;
-    var box = el('span', 'ctl');
-    var w = el('span', 'ctl-state refused', words.text);
-    w.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); delete pending[i.number]; draw(); });
-    box.append(w);
-    li.append(box);
+    var box = null;
+    [i.number, i.number + 't'].forEach(function (key) {
+      var words = pendingWords(pending[key], data, Date.now());
+      if (!words) return;
+      if (!box) box = el('span', 'ctl');
+      var w = el('span', 'ctl-state refused', words.text);
+      w.addEventListener('click', function (e) { if (e && e.stopPropagation) e.stopPropagation(); delete pending[key]; draw(); });
+      box.append(w);
+    });
+    if (box) li.append(box);
   }
   /** The cancelled items, in a collapsed section under the list: the latest 5 (and "Show N older"), each with how long is left; tapping one opens its dialog (Restore, Remove now), and Remove all cancelled at the head opens one too (items 193 and 215). */
   var CANCELLED_SHOWN = 5;
@@ -1184,6 +1414,77 @@
       showOlder.addEventListener('click', function () { cancelledMore = true; draw(); });
       more.append(showOlder);
     }
+  }
+  /* Item 240: who is building the item in play, from the file's `building` ({ kind, runnerPid?, builderPid?, since }): one quiet line at the bottom of the top box. Pids are plain whole numbers only,
+     anything else is left out; nothing when there is no `building`. */
+  /* Item 243: an item's Restart flag ({ after: [...], before: [...] } of controller and runner, from the file's item): the words for the dialog and the mark's tooltip (every combination, nothing without the flag), and for the top box while it is built. */
+  function restartPhrases(r) {
+    var out = [];
+    if (!r || typeof r !== 'object') return out;
+    ['before', 'after'].forEach(function (when) {
+      (Array.isArray(r[when]) ? r[when] : []).forEach(function (who) {
+        if (who !== 'runner' && who !== 'controller') return;
+        out.push('Restarts the ' + who + (when === 'after' ? ' after it finishes' : ' before it starts'));
+      });
+    });
+    return out;
+  }
+  function restartWords(r) { return restartPhrases(r).join('. '); }
+  function restartBuildWords(r) {
+    var out = [];
+    if (!r || typeof r !== 'object') return '';
+    ['before', 'after'].forEach(function (when) {
+      (Array.isArray(r[when]) ? r[when] : []).forEach(function (who) {
+        if (who !== 'runner' && who !== 'controller') return;
+        out.push('The ' + who + (when === 'after' ? ' restarts itself after this item' : ' restarted before this item'));
+      });
+    });
+    return out.join('. ');
+  }
+  /* Item 257: the builder has marked a task `on` and then written nothing for longer than twice that task's guess (and it has been on for that long): "No news from the builder for N minutes". The file's own time is the last write. */
+  function silentBuilderWords(now, wroteMs, nowMs) {
+    var tasks = now && Array.isArray(now.tasks) ? now.tasks : [];
+    var on = tasks.filter(function (t) { return t && t.state === 'on' && t.estimateSec > 0 && t.startedAt; })[0];
+    if (!on) return '';
+    var limit = on.estimateSec * 1000 * 2;
+    var started = new Date(on.startedAt).getTime();
+    if (isNaN(started) || nowMs - started <= limit || nowMs - wroteMs <= limit) return '';
+    var mins = Math.max(1, Math.round((nowMs - wroteMs) / 60000));
+    return 'No news from the builder for ' + mins + (mins === 1 ? ' minute' : ' minutes') + ': a step has been on for over twice its guess.';
+  }
+  function pidWords(label, n) { return Number.isInteger(n) && n > 0 && n < 10000000 ? ' \u00b7 ' + label + ' ' + n : ''; }
+  function builtWords(b, nowMs) {
+    if (!b || typeof b !== 'object' || (b.kind !== 'runner' && b.kind !== 'vscode')) return '';
+    var since = b.since && !isNaN(new Date(b.since).getTime()) ? ' \u00b7 since ' + stamp(b.since, nowMs) : '';
+    if (b.kind === 'vscode') return 'Built in VS Code' + since;
+    return 'Built by the unattended runner' + pidWords('runner pid', b.runnerPid) + pidWords('builder pid', b.builderPid) + since;
+  }
+  /* Who holds the run lock, from `lock` ({ kind, pid?, since?, pause, waiting }): drawn with the controller's own freshness rule (the controller has written lately). */
+  function lockWords(l) {
+    if (!l || typeof l !== 'object') return '';
+    var w = 'Run lock: ' + (l.kind === 'unattended' ? 'the unattended runner' : l.kind === 'vscode' ? 'VS Code' : 'free');
+    if (l.pause === true) w += '. VS Code is waiting for the runner to finish this item';
+    if (l.waiting === true) w += '. A run is waiting for the player';
+    return w;
+  }
+  function lastOfNow(n) { return (data && Array.isArray(data.items) ? data.items : []).filter(function (x) { return x && x.number === n; }).pop() || null; }
+  function drawLockWords() {
+    var nowMs = Date.now();
+    var b = $('built-line');
+    var bw = data && data.state === 'working' && data.now && !data.between ? builtWords(data.building, nowMs) : '';
+    b.hidden = !bw;
+    b.textContent = bw;
+    var rb = $('now-restart');
+    var inPlay = data && data.state === 'working' && data.now && !data.between ? lastOfNow(data.now.number) : null;
+    var rw = inPlay ? restartBuildWords(inPlay.restart) : '';
+    rb.hidden = !rw;
+    rb.textContent = rw;
+    var l = $('lock-line');
+    var c = controllerOf(data);
+    var fresh = !!c && !!c.lastSeen && nowMs - new Date(c.lastSeen).getTime() <= CONTROLLER_QUIET_MS;
+    var lw = fresh ? lockWords(data.lock) : '';
+    l.hidden = !lw;
+    l.textContent = lw;
   }
   function drawControllerNote() {
     var n = $('ctl-note');
@@ -1353,6 +1654,39 @@
     out.forEach(function (g) { g.first = g.rows[0].number; g.last = g.rows[g.rows.length - 1].number; });
     return out;
   }
+  /* Item 224: the topic of the item in play as a chip under the top box's title (the queue entry's topic, else the item's own). A button when the list below can show the item's row
+     (topic groups are drawn and the item is open there); tapping it opens the topic's group, shows The list and puts the row in view with focus on it: an instant jump, no animation.
+     Otherwise a plain label. An item with no topic shows no chip. */
+  function showInList(n, key) {
+    topicOpen[key] = true;
+    saveTopicOpen();
+    var go = function () {
+      var row = rowOf[n];
+      if (!row) return;
+      if (typeof row.setAttribute === 'function') row.setAttribute('tabindex', '-1');
+      if (typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'center' });
+      if (typeof row.focus === 'function') row.focus();
+    };
+    if (tab !== 'list') chooseTab('list'); else draw();
+    go();
+  }
+  function drawNowTopic(now, open, data) {
+    var box = $('now-topic');
+    if (!box) return;
+    box.replaceChildren();
+    var item = now ? open.filter(function (i) { return i.number === now.number; })[0] : null;
+    var qe = now ? queueEntry(data, now.number) : null;
+    var topic = (qe && qe.topic) || (item && item.topic) || '';
+    box.hidden = !topic;
+    if (!topic) return;
+    var grouped = Array.isArray(data.topics) && open.some(function (i) { return !!i.topic; });
+    if (!item || !grouped) { box.append(el('span', 'dchip', topic)); return; }
+    var b = el('button', 'dchip', topic);
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Show item ' + now.number + ' in the list under ' + topic);
+    b.addEventListener('click', function () { showInList(now.number, topic === 'urgent' ? 'urgent' : topic); });
+    box.append(b);
+  }
   function groupIsOpen(g) {
     if (Object.prototype.hasOwnProperty.call(topicOpen, g.key)) return !!topicOpen[g.key];
     return g.kind === 'urgent' || g.rows.some(function (i) { return i.state === 'working'; });
@@ -1407,6 +1741,7 @@
     head.append(toggle);
     var counts = g.kind === 'topic' ? g.done + ' of ' + g.total + ' done' : g.rows.length + (g.rows.length === 1 ? ' item' : ' items');
     head.append(el('span', 'topic-count', counts));
+    if (g.kind === 'topic') { var tl = topicMinutesLeft(data, g.name); if (tl > 0) head.append(el('span', 'topic-count', 'about ' + minutesWords(tl) + ' left')); } // (item 259)
     if (g.kind === 'topic' && g.total > 0) {
       var bar = el('span', 'tbar thin');
       var fill = el('i');
@@ -1450,6 +1785,252 @@
     pending[key] = { id: id, kind: kind, status: 'sending', reason: '', at: nowMs, extra: extra };
     postFile(key, id, commandFile(id, [commandFor(kind, null, extra, nowMs)], nowMs));
     draw();
+  }
+  /* Item 229: Hold all / Release all in the top box and the banner while held. One tap sends hold-all (or release-all) with no dialog; the banner shows at once (item 217's pending overlay);
+     a refusal or a failed send is written in place and stays until tapped. The banner reads from `hold` in the file: who is building decides its words. */
+  /* Item 236: what the alert for one entry of `restart` says. Heading by process; one line: when it changed (and which items), then whether a restart is safe now. */
+  var RESTART_HEAD = { controller: 'Controller needs restarting', runner: 'Runner needs restarting', vscode: 'VS Code needs a new chat' };
+  function restartLine(e, d, nowMs) {
+    var line = 'Changed ' + (e.since && !isNaN(new Date(e.since).getTime()) ? stamp(e.since, nowMs) : '');
+    if (Array.isArray(e.items) && e.items.length) line += ', item ' + e.items.join(', ');
+    var building = d && d.state === 'working' && d.now && Number.isInteger(d.now.number) && !d.between ? d.now.number : null;
+    if (e.safe === true) line += '. Safe to restart now';
+    else if (e.who === 'vscode') line += '. Start a new chat after this item';
+    else line += '. Wait until ' + (building !== null ? 'item ' + building : 'the item') + ' finishes';
+    return line;
+  }
+  function drawRestart() {
+    var box = $('restart-alerts');
+    if (!box) return;
+    box.replaceChildren();
+    var list = data && Array.isArray(data.restart) ? data.restart.filter(function (e) { return e && RESTART_HEAD[e.who]; }).slice(0, 3) : [];
+    box.hidden = !list.length;
+    var nowMs = Date.now();
+    list.forEach(function (e) {
+      var b = el('button', 'restart-alert');
+      b.type = 'button';
+      b.setAttribute('aria-label', RESTART_HEAD[e.who] + '. Tap for the details.');
+      b.append(el('span', 'restart-head', RESTART_HEAD[e.who]), el('span', 'restart-line', restartLine(e, data, nowMs)));
+      b.addEventListener('click', function () { openDialog({ kind: 'restart', who: e.who }, b); });
+      box.append(b);
+    });
+  }
+  function holdBannerWords(d, nowMs) {
+    if (!d || !d.hold) return '';
+    var building = d.state === 'working' && d.now && Number.isInteger(d.now.number) && !d.between;
+    var since = d.hold.at && !isNaN(new Date(d.hold.at).getTime()) ? ' (since ' + stamp(d.hold.at, nowMs) + ')' : '';
+    return (building ? 'Held: item ' + d.now.number + ' finishes, then nothing starts' : 'Held: nothing is running') + since;
+  }
+  /* Item 249: the Runners box: how many runners the controller is asked to keep (minus and plus; the controller refuses above the project's maximum and the page shows why), and each runner: its topic, its state in
+     plain words, and the last few lines of its log (the controller sends only plain words). Drawn only when the controller sends `fleet`. */
+  var RUNNER_STATE_WORDS = { 'running': 'Building', 'ending': 'Finishing its item, then closing', 'retry': 'Failed: trying again', 'waiting-limit': 'Waiting for the usage limit to reset', 'closed-by-hand': 'Closed by hand', 'needs-you': 'Needs you' };
+  function runnersWords(r) {
+    var w = RUNNER_STATE_WORDS[r.state] || r.state;
+    if (r.state === 'retry' && r.retryAt) w += ' at ' + clock(r.retryAt);
+    return w;
+  }
+  /* Item 250: while the urgent topic is running no topic merges to main: one line says so, and which topics are waiting. */
+  /* Item 251: the Deploying box. Shown while a deploy runs (since when, and the guessed finish from the earlier deploys, or "no history yet"), and when a failed deploy's branch waits for its fix to land. */
+  /* Item 252: the attended items of every topic as one list for the one human: ready ones first, each with its topic and the folder to open VS Code on (then type todo there). */
+  function drawAttendedList(d) {
+    var box = $('attended-box');
+    if (!box) return;
+    box.replaceChildren();
+    var list = d && Array.isArray(d.attendedList) ? d.attendedList : [];
+    box.hidden = !list.length;
+    if (!list.length) return;
+    box.append(el('p', 'runners-title', 'Waiting for you at VS Code'));
+    list.forEach(function (n) {
+      var row = el('div', 'runner-row');
+      row.append(el('span', 'runner-id', n.number + (n.topic ? ' \u00b7 ' + n.topic : '')), el('span', 'runner-state', (n.ready ? 'Ready: ' : 'Not ready yet: ') + n.title));
+      box.append(row);
+      if (n.folder) box.append(el('p', 'runner-line', 'Open VS Code on ' + n.folder + ' and type todo.'));
+    });
+  }
+  function drawDeploy(d) {
+    var box = $('deploy-box');
+    if (!box) return;
+    box.replaceChildren();
+    var dp = d && d.deploy && typeof d.deploy === 'object' ? d.deploy : null;
+    box.hidden = !dp || (!dp.running && !dp.blocked);
+    if (box.hidden) return;
+    if (dp.running) {
+      var words = 'Deploying' + (dp.startedAt ? ' since ' + clock(dp.startedAt) : '');
+      if (typeof dp.estimateSeconds === 'number' && dp.startedAt) words += '. Guessed finish ' + clock(new Date(Date.parse(dp.startedAt) + dp.estimateSeconds * 1000).toISOString()) + ' (' + dp.basis + ')';
+      else words += '. No finish time yet: ' + dp.basis;
+      box.append(el('p', 'notice', words + '.'));
+    }
+    if (dp.blocked) box.append(el('p', 'notice warn', 'A deploy branch is waiting for its fix to land on main before the next deploy can start.'));
+  }
+  function drawLandingsHeld(d) {
+    var box = $('landings-held');
+    if (!box) return;
+    box.replaceChildren();
+    var h = d && d.landingsHeld && typeof d.landingsHeld === 'object' ? d.landingsHeld : null;
+    box.hidden = !h;
+    if (!h) return;
+    var w = (h.waiting || []).length ? ' Waiting to merge to main: ' + h.waiting.join(', ') + '.' : '';
+    box.append(el('p', 'notice warn', 'Merges to main held: the urgent topic is running.' + w));
+  }
+  /* Item 259: with SEVERAL runners building the top box becomes a strip: one row for each, with the item's number and title (a button that opens the item in its topic's list), a bar (the same maths as the old
+     top box's bar) and the topic chip (a button that opens the topic's block). The full details (the doing line and the tasks) are in the running item's own row in the list. With one runner or none, or
+     with an old file that has only `now`, nothing here is drawn and the page is as it was. */
+  function runnerList(d) {
+    return d && Array.isArray(d.runners) ? d.runners.filter(function (r) { return r && typeof r === 'object' && typeof r.id === 'string'; }) : [];
+  }
+  function runnerPercent(r, nowMs) {
+    var tasks = Array.isArray(r.tasks) ? r.tasks : [];
+    if (tasks.length) return Math.round(tasks.reduce(function (s, t, k) { return s + steady(r.id + '|t' + k + '|' + ((t && t.startedAt) || ''), fake(t, nowMs)); }, 0) / tasks.length * 100);
+    return typeof r.percent === 'number' ? Math.max(0, Math.min(100, Math.round(r.percent))) : 0;
+  }
+  /* The topic's block: open it and put its header in view (an instant jump). Says so in one plain line when the list has no such block. */
+  function showTopicBlock(topic) {
+    var key = topic === 'urgent' ? 'urgent' : topic;
+    if (!headOf[key]) return false;
+    topicOpen[key] = true;
+    saveTopicOpen();
+    var go = function () {
+      var h = headOf[key];
+      if (h && typeof h.scrollIntoView === 'function') h.scrollIntoView({ block: 'start' });
+    };
+    if (tab !== 'list') chooseTab('list'); else draw();
+    go();
+    return true;
+  }
+  /* The time left on a topic, in minutes: its open items that are not paused and not waiting for the player (item 262's calibrated estimates, as the queue's total counts them). */
+  function topicMinutesLeft(d, topic) {
+    var rows = (lastOpenItems || []).filter(function (i) { var qe = queueEntry(d, i.number); return ((qe && qe.topic) || i.topic) === topic; });
+    return queueTotal(rows.filter(function (i) { return !isFinished(i); }), d && d.doneList).minutes;
+  }
+  function drawRunnerStrip(d, nowMs) {
+    var box = $('runner-strip');
+    if (!box) return;
+    box.replaceChildren();
+    var list = runnerList(d);
+    var strip = list.length >= 2;
+    box.hidden = !strip;
+    var nowBox = $('now');
+    if (nowBox) nowBox.hidden = strip && d.state !== 'finished';
+    if (!strip) return;
+    var said = el('p', 'strip-note', '');
+    said.hidden = true;
+    list.forEach(function (r) {
+      var row = el('div', 'strip-row');
+      var topic = r.topic || '';
+      var title = el('button', 'strip-title', r.number ? r.number + '. ' + (r.title || '') : 'Idle: nothing runnable');
+      title.type = 'button';
+      if (r.number) {
+        title.setAttribute('aria-label', 'Show item ' + r.number + ' in the list');
+        title.addEventListener('click', function () {
+          if (!rowOf[r.number]) { said.textContent = 'Item ' + r.number + ' is not in the list (it may have been moved to the finished ones).'; said.hidden = false; return; }
+          showInList(r.number, topic === 'urgent' ? 'urgent' : topic);
+        });
+      }
+      row.append(title);
+      if (topic) {
+        var chip = el('button', 'dchip', topic);
+        chip.type = 'button';
+        chip.setAttribute('aria-label', 'Show the topic ' + topic);
+        chip.addEventListener('click', function () {
+          if (!showTopicBlock(topic)) { said.textContent = 'The topic ' + topic + ' is not in the list.'; said.hidden = false; }
+        });
+        row.append(chip);
+      }
+      if (r.number) {
+        var bar = el('div', 'bar thin');
+        bar.setAttribute('role', 'progressbar');
+        bar.append(el('i'));
+        row.append(bar);
+        setBar(bar, runnerPercent(r, nowMs), false);
+        var left = topic ? topicMinutesLeft(d, topic) : 0;
+        if (left > 0) row.append(el('span', 'strip-left', 'Topic ' + topic + ': about ' + minutesWords(left) + ' left'));
+      }
+      box.append(row);
+    });
+    box.append(said);
+  }
+  /* Item 259: the running item's own row holds the full details: what it is doing and its tasks (the strip keeps only the title, the bar and the chip). Only when the strip is drawn. */
+  function runnerDetail(d, number) {
+    var list = runnerList(d);
+    if (list.length < 2) return null;
+    var r = list.filter(function (x) { return x.number === number; })[0];
+    if (!r) return null;
+    var box = el('div', 'runner-detail');
+    if (r.doing) box.append(el('p', 'now-doing', String(r.doing)));
+    (Array.isArray(r.tasks) ? r.tasks : []).forEach(function (t) {
+      box.append(el('p', 'strip-note', (t.state === 'done' ? '\u2713 ' : t.state === 'on' ? '\u25b6 ' : '\u2022 ') + String(t.label || '')));
+    });
+    return box;
+  }
+  function drawRunners(d) {
+    var box = $('runners-box');
+    if (!box) return;
+    box.replaceChildren();
+    var f = d && d.fleet && typeof d.fleet === 'object' ? d.fleet : null;
+    var c = d ? controllerOf(d) : null;
+    var nowMs = Date.now();
+    var refused = pendingWords(pending.runners, d, nowMs);
+    box.hidden = !f;
+    if (!f) return;
+    var head = el('div', 'runners-head');
+    head.append(el('span', 'runners-title', 'Runners wanted: ' + f.wanted + ' (most ' + f.max + ')'));
+    if (inbox && c && c.mode === 'live') {
+      var minus = el('button', 'ctl-btn', '−');
+      minus.type = 'button';
+      minus.setAttribute('aria-label', 'Fewer runners');
+      minus.disabled = f.wanted <= 0;
+      minus.addEventListener('click', function () { sendTopicCommand('runners', 'setrunners', f.wanted - 1); });
+      var plus = el('button', 'ctl-btn', '+');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', 'More runners');
+      plus.addEventListener('click', function () { sendTopicCommand('runners', 'setrunners', f.wanted + 1); });
+      head.append(minus, plus);
+    }
+    box.append(head);
+    if (f.limitUntil) box.append(el('p', 'runners-limit', 'Every runner is waiting for the usage limit to reset at ' + clock(f.limitUntil) + '.'));
+    (f.runners || []).forEach(function (r) {
+      var row = el('div', 'runner-row');
+      row.append(el('span', 'runner-id', r.id + ' · ' + r.topic), el('span', 'runner-state', runnersWords(r) + (r.reason ? ' (' + r.reason + ')' : '')));
+      if ((r.state === 'closed-by-hand' || r.state === 'needs-you') && inbox && c && c.mode === 'live') {
+        var again = el('button', 'ctl-btn', 'Start again');
+        again.type = 'button';
+        again.addEventListener('click', function () { sendTopicCommand('runners', 'startrunner', r.id); });
+        row.append(again);
+      }
+      box.append(row);
+      (r.lines || []).forEach(function (l) { box.append(el('p', 'runner-line', l)); });
+    });
+    if (refused) {
+      var w = el('span', 'ctl-state refused', refused.text);
+      w.addEventListener('click', function () { delete pending.runners; draw(); });
+      box.append(w);
+    }
+  }
+  function drawHold() {
+    var box = $('hold-row');
+    if (!box) return;
+    box.replaceChildren();
+    var c = data ? controllerOf(data) : null;
+    var can = !!inbox && !!c;
+    var held = !!(data && data.hold);
+    var nowMs = Date.now();
+    var refused = pendingWords(pending.hold, data, nowMs);
+    box.hidden = !held && !can && !refused;
+    if (box.hidden) return;
+    if (held) box.append(el('p', 'hold-banner on', holdBannerWords(data, nowMs)));
+    if (can) {
+      var b = el('button', 'ctl-btn', held ? 'Release all' : 'Hold all');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', held ? 'true' : 'false');
+      if (c.mode !== 'live') b.disabled = true;
+      else b.addEventListener('click', function () { sendTopicCommand('hold', held ? 'releaseall' : 'holdall', null); });
+      box.append(b);
+    }
+    if (refused) {
+      var w = el('span', 'ctl-state refused', refused.text);
+      w.addEventListener('click', function () { delete pending.hold; draw(); });
+      box.append(w);
+    }
   }
   function drawTopicStates() {
     var box = $('topic-states');
@@ -1654,9 +2235,17 @@
     var now = data.now;
     var finished = data.state === 'finished';
 
+    // (item 238) the builder is waiting for the player: the same pulsating alert as the restart alerts (steady with reduced motion), under them and above the item in play; the tab's title carries a marker while it shows
     var asking = $('asking');
+    asking.replaceChildren();
     asking.hidden = !data.asking;
-    asking.textContent = data.asking ? 'The builder is waiting for you: ' + data.asking : '';
+    if (data.asking) {
+      var ab = el('div', 'restart-alert asking-alert');
+      ab.append(el('span', 'restart-head', 'Waiting for you'), el('span', 'restart-line', String(data.asking)));
+      asking.append(ab);
+    }
+    if (BASE_TITLE === null) BASE_TITLE = typeof document.title === 'string' && document.title ? document.title.replace(/^\(!\) /, '') : 'Doodle Poker';
+    document.title = (data.asking ? '(!) ' : '') + BASE_TITLE;
 
     // (an item number that is in the list twice counts once, the LAST entry winning, kept where it first appeared: a later done beats an earlier waiting)
     var lastOf = {};
@@ -1674,6 +2263,7 @@
     between = finished || !now ? null : betweenOf(now, lastOf);
     $('bar-words').hidden = !!between;
     $('now-rel').replaceChildren(); // (item 165: filled again below while an item is in play)
+    drawNowTopic(between || finished || !now ? null : now, open, data);
     $('now-bar').hidden = !!between;
     $('tasks').hidden = !!between;
     if (between) { $('now-end').hidden = true; $('guess').hidden = true; }
@@ -1761,6 +2351,23 @@
     var pausedN = items.filter(function (i) { return i.state === 'paused'; }).length; // (item 124: dependents of a paused item are in the file as paused too)
     if (remaining && pausedN) words += ', ' + pausedN + ' paused';
     $('list-count').textContent = words;
+    lastOpenItems = open;
+    var qt = queueTotal(open.filter(function (i) { return !isFinished(i); }), data.doneList);
+    var qtw = remaining ? queueTotalWords(qt) : '';
+    var qtEl = $('queue-total');
+    qtEl.replaceChildren();
+    qtEl.hidden = !qtw;
+    if (qtw) {
+      qtEl.append(document.createTextNode(qtw));
+      if (qt.pausedMinutes > 0) qtEl.append(el('span', 'paused-total', ' + ' + minutesWords(qt.pausedMinutes) + ' paused'));
+      // (item 259) with several runners a second figure: the larger of the longest topic's time left and all the work divided by the runners
+      var nRun = Math.max(runnerList(data).length, data.fleet && typeof data.fleet.wanted === 'number' ? data.fleet.wanted : 0);
+      if (nRun > 1) {
+        var longest = 0;
+        (Array.isArray(data.topics) ? data.topics : []).forEach(function (tp) { longest = Math.max(longest, topicMinutesLeft(data, tp.name)); });
+        qtEl.append(el('span', 'paused-total', '; with ' + nRun + ' runners: about ' + minutesWords(Math.max(longest, qt.minutes / nRun))));
+      }
+    }
     setBar($('list-bar'), remainingPercent(remaining), true);
 
     dlgCtx = { lastOf: lastOf, items: items, needsYou: needsYou };
@@ -1796,10 +2403,16 @@
         var pw = qe && qe.topicPaused && !i.pausedFor && !(qe.pause) ? 'Paused with its topic' : i.pausedFor ? 'Waits for item ' + i.pausedFor + ', which is paused' + (head && head.reason ? ': ' + head.reason : '') : 'Paused: ' + (i.reason ? String(i.reason) : 'No reason was given');
         title.append(el('span', 'what', pw));
       }
+      if (i.state === 'working') { var rd = runnerDetail(data, i.number); if (rd) title.append(rd); } // (item 259: with several runners the full details are here)
+      var rwords = restartWords(i.restart);
+      if (rwords) { var rm = el('span', 'restart-mark', '\u21bb'); rm.setAttribute('title', rwords); rm.setAttribute('aria-label', rwords); title.append(rm); } // (item 243)
+      var ew = estimateWords(i);
+      if (sizeMark(i.size)) { var sz = el('span', 'szline'); sz.append(el('span', 'szmark', sizeMark(i.size))); if (ew) sz.append(document.createTextNode(ew)); title.append(sz); } // (item 157: an unsized item shows nothing)
       depLines(i, lastOf, items).forEach(function (line) { title.append(line); });
       var numEl = el('span', 'num', i.number);
       var grip = gripFor(i); // (item 174)
       if (grip) { li.className += ' has-grip'; li.append(grip); }
+      else if (i.state === 'working' && inbox && controllerOf(data)) { li.className += ' has-grip'; li.append(el('span', 'grip-space')); } // (item 233: the running row has no gripper but keeps its column, so its number and title line up with the rows around it)
       li.append(numEl, title, el('span', 'chip', chipWords(i, lastOf)));
       drawRowWords(i, li); // (item 173; the buttons are in the dialog since item 215)
       rowOf[i.number] = li;
@@ -1839,7 +2452,15 @@
     numWidth(ul2, shownRows);
     drawCancelled(); // (item 173)
     drawControllerNote();
+    drawLockWords(); // (item 240)
     drawTopicStates(); // (item 245: only when topic branches are on)
+    drawHold(); // (item 229)
+    drawRunners(data); // (item 249)
+    drawRunnerStrip(data, nowMs); // (item 259)
+    drawLandingsHeld(data); // (item 250)
+    drawDeploy(data); // (item 251)
+    drawAttendedList(data); // (item 252)
+    drawRestart(); // (item 236)
     itemsNow = shownRows;
     applyHighlights(); // (the page redraws on every update: a tap still active is applied again to the new rows)
     drawDialog(); // (item 215: the open dialog follows the new data)
@@ -1851,12 +2472,12 @@
     (Array.isArray(data.doneList) ? data.doneList : []).forEach(function (r) {
       if (!r || byNo[r.number]) return;
       var fin = r.finishedAt ? new Date(r.finishedAt).getTime() : NaN;
-      var rec = { number: r.number, title: r.title, state: r.result === 'part' ? 'part' : 'done', finishedAt: r.finishedAt };
+      var rec = { number: r.number, title: r.title, state: r.result === 'part' ? 'part' : 'done', finishedAt: r.finishedAt, size: r.size };
       if (!isNaN(fin) && typeof r.tookSec === 'number') rec.startedAt = new Date(fin - r.tookSec * 1000).toISOString();
       byNo[r.number] = rec;
       all.push(rec);
     });
-    doneItems.forEach(function (i) { if (byNo[i.number]) all.splice(all.indexOf(byNo[i.number]), 1); byNo[i.number] = i; all.push(i); }); // (what the file itself holds is the newest word on an item)
+    doneItems.forEach(function (i) { if (byNo[i.number]) { if (!i.size && byNo[i.number].size) i.size = byNo[i.number].size; all.splice(all.indexOf(byNo[i.number]), 1); } byNo[i.number] = i; all.push(i); }); // (what the file itself holds is the newest word on an item)
     var doneSorted = all.sort(function (a, b) { return (b.finishedAt ? new Date(b.finishedAt) : 0) - (a.finishedAt ? new Date(a.finishedAt) : 0); });
     // (item 160: N is every item the permanent record says is finished, when the file has it; never fewer than the finished items listed)
     var doneAll = typeof data.doneTotal === 'number' && data.doneTotal >= 0 ? Math.max(Math.floor(data.doneTotal), doneSorted.length) : doneSorted.length;
@@ -1873,6 +2494,7 @@
       var when = doneWords(i, nowMs);
       if (i.note) when = when ? when + '. ' + i.note : i.note;
       if (when) title.append(el('span', 'when', when));
+      if (sizeMark(i.size)) { var dsz = el('span', 'szline'); dsz.append(el('span', 'szmark', sizeMark(i.size))); title.append(dsz); } // (item 157: a done item shows its size; how long it took is in the line above)
       li.append(el('span', 'num', i.number), title, el('span', 'chip', st.chip));
       dl.append(li);
     });
@@ -1880,6 +2502,9 @@
     var more = $('done-more');
     more.hidden = doneSorted.length <= DONE_SHOWN;
     more.textContent = 'Show ' + DONE_STEP + ' more';
+    var accW = accuracyWords(data.estimateAccuracy);
+    $('estimate-accuracy').textContent = accW;
+    $('estimate-accuracy').hidden = !accW || doneSorted.length === 0;
 
     // the two backlogs: titles only (item 161), read-only
     var groups = data.backlog && Array.isArray(data.backlog.groups) ? data.backlog.groups : [];
@@ -1908,6 +2533,7 @@
     // the tab row: one at a time, the chosen one remembered; counts beside the names
     var counts = { list: null, backlog: data.backlog ? blCount : null, june: Array.isArray(data.juneBacklog) ? june.length : null, done: doneAll };
     var tabsEl = $('tabs');
+    var activeTab = null;
     tabsEl.replaceChildren();
     TABS.forEach(function (t) {
       var b = el('button', null, t[1]);
@@ -1916,7 +2542,9 @@
       if (counts[t[0]] !== null) b.append(el('span', 'n', counts[t[0]]));
       b.addEventListener('click', function () { chooseTab(t[0]); });
       tabsEl.append(b);
+      if (t[0] === tab) activeTab = b;
     });
+    if (tabScroll && activeTab && typeof activeTab.scrollIntoView === 'function') { tabScroll = false; activeTab.scrollIntoView({ block: 'nearest', inline: 'center' }); } // (an instant move, no smooth scrolling)
     $('tab-list').hidden = tab !== 'list';
     $('tab-backlog').hidden = tab !== 'backlog';
     $('tab-june').hidden = tab !== 'june';
@@ -1941,7 +2569,12 @@
     // (item 120) while a run is going and the file has not been written for 10 minutes: when it was last written, by the viewer's clock, counting up while the page is open
     var bq = $('builder-quiet');
     var wrote = new Date(data.updatedAt).getTime();
-    if (data.state === 'working' && !isNaN(wrote) && nowMs - wrote > BUILDER_QUIET_AFTER) {
+    // (item 257) a task that has been on for over twice its guess while the file has not been written for as long: a plain line, not an alert
+    var silent = data.state === 'working' && !isNaN(wrote) ? silentBuilderWords(data.now, wrote, nowMs) : '';
+    if (silent) {
+      bq.hidden = false;
+      bq.textContent = silent;
+    } else if (data.state === 'working' && !isNaN(wrote) && nowMs - wrote > BUILDER_QUIET_AFTER) {
       bq.hidden = false;
       bq.textContent = 'No word from the builder since ' + stamp(data.updatedAt, nowMs) + ' (' + span(nowMs - wrote) + ')';
     } else bq.hidden = true;
